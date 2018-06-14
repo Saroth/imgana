@@ -1,0 +1,7 @@
+.exvim.*/
+*.swp
+*.swo
+*.vimproject
+
+build/
+
