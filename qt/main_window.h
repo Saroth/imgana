@@ -23,8 +23,13 @@ private:
     void create_status_bar(void);
     void create_central(void);
 
+protected:
+    void resizeEvent(QResizeEvent *event);
+
 private slots:
+    void reset_size(void);
     void about(void);
+    void about_qt(void);
     void status_bar_update_time(void);
 
 };
