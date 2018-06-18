@@ -2,13 +2,16 @@
 #include <QDateTime>
 #include <QMessageBox>
 #include <QPushButton>
-#include <QTextEdit>
-#include <QLineEdit>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QFileDialog>
+#include <QImage>
+#include <QPixmap>
+#include <QMouseEvent>
+
+#include <unistd.h>
 
 #include "main_window.h"
-#include "image_viewer.h"
 #include "version.h"
 
 #define WINDOW_WIDTH_DEF    800
@@ -25,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 void MainWindow::create_menu_bar(void)
 {
-    menu_bar = this->menuBar();
+    menu_bar = menuBar();
 
     QMenu *file = menu_bar->addMenu("&File");
     QAction *exit = file->addAction("E&xit");
@@ -63,7 +66,7 @@ void MainWindow::about_qt(void)
 
 void MainWindow::create_status_bar(void)
 {
-    status_bar = this->statusBar();
+    status_bar = statusBar();
 
     status_bar_time = new QLabel();
     status_bar_update_time();
@@ -85,29 +88,39 @@ void MainWindow::resizeEvent(QResizeEvent *event)
             3000);
 }
 
+
 void MainWindow::create_central(void)
 {
+    file_path = "./images/";
+
     QPushButton *button_open = new QPushButton("&Open");
     button_open->setFixedWidth(button_open->fontMetrics().width(
                 button_open->text()));
+    connect(button_open, &QPushButton::pressed, this, &MainWindow::open_file);
     QPushButton *button_reload = new QPushButton("&Reload");
+    connect(button_reload, &QPushButton::pressed,
+            this, &MainWindow::image_reload);
     QPushButton *button_unload = new QPushButton("&Unload");
+    connect(button_unload, &QPushButton::pressed,
+            this, &MainWindow::image_unload);
     QPushButton *button_analyze = new QPushButton("&Analyze");
+    connect(button_unload, &QPushButton::pressed,
+            this, &MainWindow::image_analyze);
     QPushButton *button_stop = new QPushButton("&Stop");
-    QLineEdit *editor_file_path = new QLineEdit();
+    connect(button_unload, &QPushButton::pressed,
+            this, &MainWindow::image_analyze_stop);
+    editor_file_path = new QLineEdit(QString(file_path + "01-1.jpg"));
     editor_file_path->setPlaceholderText("path of image file.");
     editor_file_path->setTextMargins(0, 0, button_open->width(), 0);
     QLabel *label_file_path = new QLabel("&Path:");
     label_file_path->setBuddy(editor_file_path);
-    ImageViewer *image_viewer = new ImageViewer();
-    QTextEdit *state_viewer = new QTextEdit();
+    state_viewer = new QTextEdit();
     state_viewer->setMaximumHeight(100);
     state_viewer->setReadOnly(true);
-    state_viewer->append("No image loaded.");
     QPalette state_pal;
-    state_pal.setColor(QPalette::Base, QColor(0xC0, 0xC0, 0xC0));
+    state_pal.setColor(QPalette::Base, QColor(0xF8, 0xF8, 0xF8));
     state_viewer->setPalette(state_pal);
-    QTextEdit *log_viewer = new QTextEdit();
+    log_viewer = new QTextEdit();
     log_viewer->setMaximumWidth(600);
     log_viewer->setMinimumWidth(200);
     log_viewer->setReadOnly(true);
@@ -142,7 +155,7 @@ void MainWindow::create_central(void)
     layout_main->setSpacing(2);
     layout_main->addLayout(layout_file_path);
     layout_main->addLayout(layout_controller);
-    layout_main->addWidget(image_viewer);
+    layout_main->addWidget(&image_viewer);
     QHBoxLayout *layout_top = new QHBoxLayout();
     layout_top->setMargin(4);
     layout_top->setSpacing(2);
@@ -151,5 +164,84 @@ void MainWindow::create_central(void)
     QWidget *central = new QWidget();
     central->setLayout(layout_top);
     setCentralWidget(central);
+
+    image_viewer.setMouseTracking(true);
+    central->setMouseTracking(true);
+    setMouseTracking(true);
+    update_state();
+}
+
+void MainWindow::open_file(void)
+{
+    QString file = QFileDialog::getOpenFileName(this, "open image file",
+            file_path, "Image files(*)");
+    if (file.length() == 0) {
+        return;
+    }
+    QFileInfo info = QFileInfo(file);
+    file_path = info.absolutePath();
+
+    editor_file_path->setText(file);
+    image_reload();
+}
+
+void MainWindow::image_reload(void)
+{
+    QString file = editor_file_path->text();
+    QImage image;
+    if (image.load(file) == false) {
+        QString err = "Load failed.\nInvalid image file:" + file;
+        QMessageBox::warning(this, "Error", err);
+    }
+    image_viewer.set_pixmap(QPixmap::fromImage(image));
+    update_state();
+}
+
+void MainWindow::image_unload(void)
+{
+    image_viewer.set_pixmap(QPixmap(""));
+    update_state();
+}
+
+void MainWindow::image_analyze(void)
+{
+}
+
+void MainWindow::image_analyze_stop(void)
+{
+    
+}
+
+
+void MainWindow::append_log(QString str)
+{
+    log_viewer->append(str);
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *evn)
+{
+    update_state();
+}
+
+void MainWindow::wheelEvent(QWheelEvent *evn)
+{
+    update_state();
+}
+
+void MainWindow::update_state(void)
+{
+    state_viewer->clear();
+    if (image_viewer.is_empty()) {
+        return;
+    }
+    const QPixmap *pix = image_viewer.origin_pixmap();
+    state_viewer->append(QString("Image size: \t%1x%2")
+            .arg(pix->width()).arg(pix->height()));
+    pix = image_viewer.pixmap();
+    state_viewer->append(QString("Scale size: \t%1x%2(x%3)")
+            .arg(pix->width()).arg(pix->height()).arg(image_viewer.scale()));
+    QPoint pos = image_viewer.mouse_pos();
+    state_viewer->append(QString("Point: \t%1x%2")
+            .arg(pos.x()).arg(pos.y()));
 }
 

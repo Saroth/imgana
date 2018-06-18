@@ -1,8 +1,8 @@
-#include "image_viewer.h"
-
 #include <QMouseEvent>
 #include <QScrollBar>
 #include <math.h>
+
+#include "image_viewer.h"
 
 #define DEFAULT_TEXT "No image loaded."
 #define SCALE_MAX 12.0
@@ -12,9 +12,8 @@ ImageViewer::ImageViewer(QWidget *parent) : QScrollArea(parent)
 {
     mouse_leftbtn_pressed = false;
     image_scale = 1.0;
-    painter = new ImagePainter();
-    painter->set_text(DEFAULT_TEXT);
-    setWidget(painter);
+    painter.set_text(DEFAULT_TEXT);
+    setWidget(&painter);
     setBackgroundRole(QPalette::Dark);
     setAlignment(Qt::AlignCenter);
 
@@ -25,6 +24,11 @@ ImageViewer::ImageViewer(QWidget *parent) : QScrollArea(parent)
     show_scale_timer = new QTimer();
     connect(show_scale_timer, &QTimer::timeout,
             this, &ImageViewer::remove_scale_by_timer);
+
+    installEventFilter(this);
+    installEventFilter(&painter);
+    installEventFilter(horizontalScrollBar());
+    installEventFilter(verticalScrollBar());
 }
 
 void ImageViewer::show_scale(void)
@@ -49,22 +53,31 @@ void ImageViewer::remove_scale_by_timer(void)
 void ImageViewer::set_pixmap(const QPixmap &pixmap)
 {
     image_scale = 1.0;
-    painter->set_pixmap(pixmap);
+    painter.set_pixmap(pixmap);
     if (is_empty()) {
-        painter->set_text(DEFAULT_TEXT);
+        painter.set_text(DEFAULT_TEXT);
+    }
+    else {
+        set_scale(image_scale);
+        show_scale();
     }
 }
 
 const QPixmap *ImageViewer::pixmap(void)
 {
-    return painter->pixmap();
+    return painter.pixmap();
+}
+
+const QPixmap *ImageViewer::origin_pixmap(void)
+{
+    return &painter.origin_image;
 }
 
 void ImageViewer::set_scale(double s)
 {
     image_scale = s;
     show_scale();
-    painter->set_scale(s);
+    painter.set_scale(s);
 }
 
 double ImageViewer::scale(void)
@@ -74,44 +87,36 @@ double ImageViewer::scale(void)
 
 bool ImageViewer::is_empty(void)
 {
-    return painter->pixmap() == 0 || painter->pixmap()->isNull();
+    return painter.pixmap() == 0 || painter.pixmap()->isNull();
+}
+
+QPoint ImageViewer::mouse_pos(void)
+{
+    return painter.mouse_pos;
 }
 
 
 bool ImageViewer::eventFilter(QObject *obj, QEvent *evn)
 {
     if (evn->type() == QEvent::MouseButtonPress) {
-        QMouseEvent *mos = (QMouseEvent *)evn;
-        mouse_last_pos = mos->globalPos();
-        if (verticalScrollBar()->isVisible()) {
-            if (mouse_last_pos.x() >= verticalScrollBar()->mapToGlobal(
-                        verticalScrollBar()->pos()).x()) {
-                return verticalScrollBar()->eventFilter(obj, evn);
+        if (obj == &painter) {
+            QMouseEvent *mos = (QMouseEvent *)evn;
+            if (mos->buttons() & Qt::LeftButton) {
+                mouse_last_pos = mos->globalPos();
+                mouse_leftbtn_pressed = true;
             }
-        }
-        if (horizontalScrollBar()->isVisible()) {
-            if (mouse_last_pos.y() >= horizontalScrollBar()->mapToGlobal(
-                        horizontalScrollBar()->pos()).y()) {
-                return horizontalScrollBar()->eventFilter(obj, evn);
-            }
-        }
-        if (mos->buttons() & Qt::LeftButton) {
-            mouse_leftbtn_pressed = true;
-            return true;
         }
     }
     else if (evn->type() == QEvent::MouseMove) {
-        if (mouse_leftbtn_pressed) {
+        if (obj == &painter && mouse_leftbtn_pressed) {
             QPoint mouse_pos_new = ((QMouseEvent *)evn)->globalPos();
             int ofs_x = mouse_pos_new.x() - mouse_last_pos.x();
             int ofs_y = mouse_pos_new.y() - mouse_last_pos.y();
             mouse_last_pos = mouse_pos_new;
-            QScrollBar *sclbar;
-            sclbar = horizontalScrollBar();
-            sclbar->setValue(sclbar->value() - ofs_x);
-            sclbar = verticalScrollBar();
-            sclbar->setValue(sclbar->value() - ofs_y);
-            return true;
+            horizontalScrollBar()->setValue(
+                    horizontalScrollBar()->value() - ofs_x);
+            verticalScrollBar()->setValue(
+                    verticalScrollBar()->value() - ofs_y);
         }
     }
     else if (evn->type() == QEvent::MouseButtonRelease) {
@@ -121,7 +126,6 @@ bool ImageViewer::eventFilter(QObject *obj, QEvent *evn)
         if (is_empty()) {
             return QObject::eventFilter(obj, evn);
         }
-
         QWheelEvent *whl = (QWheelEvent *)evn;
         QPoint pos = whl->globalPos();
         if (verticalScrollBar()->isVisible()) {
@@ -141,9 +145,9 @@ bool ImageViewer::eventFilter(QObject *obj, QEvent *evn)
         if (pos.x() < width() && pos.y() < height()) {
             double imgscl = scale();
             imgscl += (whl->delta() / 120.0 / 10.0) * imgscl;
-            imgscl *= 10;
-            imgscl = floor(imgscl + 0.5);
-            imgscl /= 10;
+            if (imgscl >= 0.6) {
+                imgscl = floor(imgscl * 10.0 + 0.5) / 10.0;
+            }
             if (imgscl < SCALE_MIN) {
                 imgscl = SCALE_MIN;
             }
@@ -151,26 +155,22 @@ bool ImageViewer::eventFilter(QObject *obj, QEvent *evn)
                 imgscl = SCALE_MAX;
             }
 
-            QSize size_old = painter->pixmap()->size();
+            QSize size_old = painter.pixmap()->size();
             set_scale(imgscl);
-            QSize size = painter->size();
+            QSize size = painter.size();
 
             QScrollBar *sclbar = horizontalScrollBar();
-            if (sclbar->isVisible()) {
-                if (sclbar->maximum() < size.width()) { /* 修复缩小时跳动 */
-                    sclbar->setMaximum(size.width());  /* 修复无法对边缘放大 */
-                }
-                sclbar->setValue((sclbar->value() + pos.x()) * size.width()
-                        / size_old.width() - pos.x());
+            if (sclbar->maximum() < size.width()) { /* 修复缩小时跳动 */
+                sclbar->setMaximum(size.width());  /* 修复无法对边缘放大 */
             }
+            sclbar->setValue((sclbar->value() + pos.x()) * size.width()
+                    / size_old.width() - pos.x());
             sclbar = verticalScrollBar();
-            if (sclbar->isVisible()) {
-                if (sclbar->maximum() < size.height()) {
-                    sclbar->setMaximum(size.height());
-                }
-                sclbar->setValue((sclbar->value() + pos.y()) * size.height()
-                        / size_old.height() - pos.y());
+            if (sclbar->maximum() < size.height()) {
+                sclbar->setMaximum(size.height());
             }
+            sclbar->setValue((sclbar->value() + pos.y()) * size.height()
+                    / size_old.height() - pos.y());
             return true;
         }
     }

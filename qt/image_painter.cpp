@@ -1,3 +1,6 @@
+#include <QLayout>
+#include <QMouseEvent>
+
 #include "image_viewer.h"
 
 
@@ -23,11 +26,12 @@ ImagePainter::ImagePainter(QWidget *parent) : QLabel(parent)
 
     points.resize(400);
     lines.resize(64);
+
+    setMouseTracking(true);
 }
 
 void ImagePainter::set_pixmap(const QPixmap &pixmap)
 {
-    image_scale = 1.0;
     origin_image = pixmap;
     resize(origin_image.size());
     setPixmap(origin_image);
@@ -78,4 +82,14 @@ void ImagePainter::paintEvent(QPaintEvent *evn)
     }
 }
 
+bool ImagePainter::event(QEvent *evn)
+{
+    if (evn->type() == QMouseEvent::MouseMove) {
+        mouse_pos = ((QMouseEvent *)evn)->pos();
+        mouse_pos.setX(mouse_pos.x() / image_scale);
+        mouse_pos.setY(mouse_pos.y() / image_scale);
+    }
+
+    return QWidget::event(evn);
+}
 
