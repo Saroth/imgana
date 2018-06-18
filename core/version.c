@@ -4,12 +4,12 @@
 
 static char version_string[32];
 
-unsigned int imgana_get_version(void)
+unsigned int imgana_version(void)
 {
     return IMGANA_VERSION;
 }
 
-const char *imgana_get_version_str(void)
+const char *imgana_version_str(void)
 {
     snprintf(version_string, sizeof(version_string), "%d.%d.%d",
             (IMGANA_VERSION >> 16) & 0xFF,

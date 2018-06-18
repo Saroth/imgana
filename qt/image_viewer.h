@@ -109,7 +109,7 @@ private:
     ImagePainter painter;
     bool mouse_leftbtn_pressed;
     QPoint mouse_last_pos;
-    double image_scale;
+    double image_scale_exact;
     QLabel *scale_info;
     QTimer *show_scale_timer;
 

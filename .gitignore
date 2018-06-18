@@ -5,4 +5,5 @@
 
 build/
 test/imgana
+test/libanalyzer_demo.so
 

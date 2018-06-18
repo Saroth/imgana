@@ -2,6 +2,8 @@
 #include <QScrollBar>
 #include <math.h>
 
+#include <unistd.h>
+
 #include "image_viewer.h"
 
 #define DEFAULT_TEXT "No image loaded."
@@ -11,7 +13,7 @@
 ImageViewer::ImageViewer(QWidget *parent) : QScrollArea(parent)
 {
     mouse_leftbtn_pressed = false;
-    image_scale = 1.0;
+    image_scale_exact = 1.0;
     painter.set_text(DEFAULT_TEXT);
     setWidget(&painter);
     setBackgroundRole(QPalette::Dark);
@@ -33,7 +35,7 @@ ImageViewer::ImageViewer(QWidget *parent) : QScrollArea(parent)
 
 void ImageViewer::show_scale(void)
 {
-    scale_info->setText(QString("x%1").arg(image_scale, 0, 'f', 1));
+    scale_info->setText(QString("x%1").arg(scale(), 0, 'f', 1));
     scale_info->resize(scale_info->fontMetrics().size(0, scale_info->text()));
 
     QPoint pos = QPoint(width() - scale_info->width() - 4, 4);
@@ -52,13 +54,12 @@ void ImageViewer::remove_scale_by_timer(void)
 
 void ImageViewer::set_pixmap(const QPixmap &pixmap)
 {
-    image_scale = 1.0;
     painter.set_pixmap(pixmap);
     if (is_empty()) {
         painter.set_text(DEFAULT_TEXT);
     }
     else {
-        set_scale(image_scale);
+        set_scale(1.0);
         show_scale();
     }
 }
@@ -75,14 +76,20 @@ const QPixmap *ImageViewer::origin_pixmap(void)
 
 void ImageViewer::set_scale(double s)
 {
-    image_scale = s;
+    image_scale_exact = s;
+    if (image_scale_exact < SCALE_MIN) {
+        image_scale_exact = SCALE_MIN;
+    }
+    else if (image_scale_exact > SCALE_MAX) {
+        image_scale_exact = SCALE_MAX;
+    }
     show_scale();
-    painter.set_scale(s);
+    painter.set_scale(scale());
 }
 
 double ImageViewer::scale(void)
 {
-    return image_scale;
+    return floor(image_scale_exact * 10.0 + 0.5) / 10.0;
 }
 
 bool ImageViewer::is_empty(void)
@@ -143,20 +150,11 @@ bool ImageViewer::eventFilter(QObject *obj, QEvent *evn)
 
         pos = whl->pos();
         if (pos.x() < width() && pos.y() < height()) {
-            double imgscl = scale();
-            imgscl += (whl->delta() / 120.0 / 10.0) * imgscl;
-            if (imgscl >= 0.6) {
-                imgscl = floor(imgscl * 10.0 + 0.5) / 10.0;
-            }
-            if (imgscl < SCALE_MIN) {
-                imgscl = SCALE_MIN;
-            }
-            else if (imgscl > SCALE_MAX) {
-                imgscl = SCALE_MAX;
-            }
+            image_scale_exact += (whl->delta() / 120.0 / 40.0)
+                * image_scale_exact;
 
             QSize size_old = painter.pixmap()->size();
-            set_scale(imgscl);
+            set_scale(image_scale_exact);
             QSize size = painter.size();
 
             QScrollBar *sclbar = horizontalScrollBar();
@@ -177,6 +175,4 @@ bool ImageViewer::eventFilter(QObject *obj, QEvent *evn)
 
     return QObject::eventFilter(obj, evn);
 }
-
-
 

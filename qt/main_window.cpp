@@ -1,7 +1,6 @@
 #include <QTimer>
 #include <QDateTime>
 #include <QMessageBox>
-#include <QPushButton>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QFileDialog>
@@ -55,7 +54,7 @@ void MainWindow::about(void)
     QString msg;
     msg.append("Image Analyzer\n");
     msg.append("\n");
-    msg.append(QString("version %1\n").arg(imgana_get_version_str()));
+    msg.append(QString("version %1\n").arg(imgana_version_str()));
     QMessageBox::about(this, "About", msg);
 }
 
@@ -92,23 +91,27 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 void MainWindow::create_central(void)
 {
     file_path = "./images/";
+    ana_stat = analyze_state_none;
 
-    QPushButton *button_open = new QPushButton("&Open");
+    button_open = new QPushButton("&Open");
     button_open->setFixedWidth(button_open->fontMetrics().width(
                 button_open->text()));
     connect(button_open, &QPushButton::pressed, this, &MainWindow::open_file);
-    QPushButton *button_reload = new QPushButton("&Reload");
+    button_reload = new QPushButton("&Reload");
     connect(button_reload, &QPushButton::pressed,
             this, &MainWindow::image_reload);
-    QPushButton *button_unload = new QPushButton("&Unload");
+    button_unload = new QPushButton("&Unload");
     connect(button_unload, &QPushButton::pressed,
             this, &MainWindow::image_unload);
-    QPushButton *button_analyze = new QPushButton("&Analyze");
-    connect(button_unload, &QPushButton::pressed,
+    button_unload->setDisabled(true);
+    button_analyze = new QPushButton("&Analyze");
+    connect(button_analyze, &QPushButton::pressed,
             this, &MainWindow::image_analyze);
-    QPushButton *button_stop = new QPushButton("&Stop");
-    connect(button_unload, &QPushButton::pressed,
+    button_analyze->setDisabled(true);
+    button_stop = new QPushButton("&Stop");
+    connect(button_stop, &QPushButton::pressed,
             this, &MainWindow::image_analyze_stop);
+    button_stop->setDisabled(true);
     editor_file_path = new QLineEdit(QString(file_path + "01-1.jpg"));
     editor_file_path->setPlaceholderText("path of image file.");
     editor_file_path->setTextMargins(0, 0, button_open->width(), 0);
@@ -194,29 +197,49 @@ void MainWindow::image_reload(void)
         QMessageBox::warning(this, "Error", err);
     }
     image_viewer.set_pixmap(QPixmap::fromImage(image));
+
+    button_unload->setEnabled(true);
+    button_analyze->setEnabled(true);
+    ana_stat = analyze_state_none;
     update_state();
 }
 
 void MainWindow::image_unload(void)
 {
     image_viewer.set_pixmap(QPixmap(""));
+    button_unload->setDisabled(true);
+    button_analyze->setDisabled(true);
     update_state();
 }
 
 void MainWindow::image_analyze(void)
 {
+    editor_file_path->setDisabled(true);
+    button_open->setDisabled(true);
+    button_reload->setDisabled(true);
+    button_unload->setDisabled(true);
+    button_analyze->setDisabled(true);
+    button_stop->setEnabled(true);
+    ana_stat = analyze_state_running;
+
+    // ...
+    update_state();
 }
 
 void MainWindow::image_analyze_stop(void)
 {
-    
+    // ...
+
+    editor_file_path->setEnabled(true);
+    button_open->setEnabled(true);
+    button_reload->setEnabled(true);
+    button_unload->setEnabled(true);
+    button_analyze->setEnabled(true);
+    button_stop->setDisabled(true);
+    ana_stat = analyze_state_stopped;
+    update_state();
 }
 
-
-void MainWindow::append_log(QString str)
-{
-    log_viewer->append(str);
-}
 
 void MainWindow::mouseMoveEvent(QMouseEvent *evn)
 {
@@ -241,7 +264,12 @@ void MainWindow::update_state(void)
     state_viewer->append(QString("Scale size: \t%1x%2(x%3)")
             .arg(pix->width()).arg(pix->height()).arg(image_viewer.scale()));
     QPoint pos = image_viewer.mouse_pos();
-    state_viewer->append(QString("Point: \t%1x%2")
+    state_viewer->append(QString("Point: \t%1, %2")
             .arg(pos.x()).arg(pos.y()));
+}
+
+void MainWindow::append_log(QString str)
+{
+    log_viewer->append(str);
 }
 

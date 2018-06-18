@@ -7,6 +7,7 @@
 #include <QLineEdit>
 #include <QTextEdit>
 #include <QLabel>
+#include <QPushButton>
 
 #include "image_viewer.h"
 
@@ -27,6 +28,12 @@ protected:
     void update_state(void);
 
 private:
+    enum analyze_state {
+        analyze_state_none,
+        analyze_state_running,
+        analyze_state_finish,
+        analyze_state_stopped,
+    };
     QMenuBar *menu_bar;
     QStatusBar *status_bar;
     QLabel *status_bar_time;
@@ -35,6 +42,12 @@ private:
     ImageViewer image_viewer;
     QTextEdit *state_viewer;
     QTextEdit *log_viewer;
+    QPushButton *button_open;
+    QPushButton *button_reload;
+    QPushButton *button_unload;
+    QPushButton *button_analyze;
+    QPushButton *button_stop;
+    enum analyze_state ana_stat;
 
     void create_menu_bar(void);
     void create_status_bar(void);

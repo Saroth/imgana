@@ -13,8 +13,8 @@ extern "C" {
  */
 #define IMGANA_VERSION  0x00000000
 
-unsigned int imgana_get_version(void);
-const char *imgana_get_version_str(void);
+unsigned int imgana_version(void);
+const char *imgana_version_str(void);
 
 #if defined(__cplusplus)
 }
