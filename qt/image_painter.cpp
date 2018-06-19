@@ -46,6 +46,7 @@ void ImagePainter::set_scale(double s)
     QSize size = QSize(origin_image.width() * s, origin_image.height() * s);
     resize(size);
     setPixmap(origin_image.scaled(size));
+    show_border = false;
 }
 
 void ImagePainter::set_text(const QString &t)
@@ -79,15 +80,38 @@ void ImagePainter::paintEvent(QPaintEvent *evn)
                     (lin.y2() + 0.5) * image_scale);
             pai.drawLine(lin);
         }
+        if (show_border) {
+            pai.drawLine(pixel_border_top);
+            pai.drawLine(pixel_border_bottom);
+            pai.drawLine(pixel_border_left);
+            pai.drawLine(pixel_border_right);
+        }
     }
 }
 
 bool ImagePainter::event(QEvent *evn)
 {
-    if (evn->type() == QMouseEvent::MouseMove) {
+    if (evn->type() == QMouseEvent::MouseMove
+            && pixmap() && !pixmap()->isNull()) {
         mouse_pos = ((QMouseEvent *)evn)->pos();
-        mouse_pos.setX(mouse_pos.x() / image_scale);
-        mouse_pos.setY(mouse_pos.y() / image_scale);
+        mouse_pos.setX((mouse_pos.x() - 1) / image_scale);
+        mouse_pos.setY((mouse_pos.y() - 1) / image_scale);
+
+        if (image_scale >= 4) {
+            show_border = true;
+            int xl = mouse_pos.x() * image_scale - 1;
+            int yt = mouse_pos.y() * image_scale - 1;
+            int xr = (mouse_pos.x() + 1) * image_scale + 1;
+            int yb = (mouse_pos.y() + 1) * image_scale + 1;
+            pixel_border_top.setLine(xl, yt, xr, yt);
+            pixel_border_bottom.setLine(xl, yb, xr, yb);
+            pixel_border_left.setLine(xl, yt, xl, yb);
+            pixel_border_right.setLine(xr, yt, xr, yb);
+            update();
+        }
+        else {
+            show_border = false;
+        }
     }
 
     return QWidget::event(evn);

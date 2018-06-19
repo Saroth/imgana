@@ -44,11 +44,14 @@ void analyzer_set_mark_point(analyzer_context *ctx,
 void analyzer_set_mark_line(analyzer_context *ctx,
         func_analyzer_bio_mark_line f_mark_line, void *p);
 
+int analyzer_import_bitmap(analyzer_context *ctx,
+        const unsigned char *data, size_t size, size_t bits_per_pixel,
+        size_t w, size_t h);
 int analyzer_import_bmp(analyzer_context *ctx, const char *bmp, size_t size);
 int analyzer_export_bitmap(analyzer_context *ctx,
-        unsigned char *bitmap, size_t size, size_t *w, size_t *h, size_t *len);
+        unsigned char *buf, size_t size, size_t *w, size_t *h, size_t *len);
 int analyzer_export_data(analyzer_context *ctx,
-        unsigned char *data, size_t size, size_t *len);
+        unsigned char *buf, size_t size, size_t *len);
 
 int analyzer_start(analyzer_context *ctx);
 int analyzer_is_running(analyzer_context *ctx);
@@ -70,12 +73,15 @@ typedef void (*func_analyzer_set_mark_point)(analyzer_context *ctx,
 typedef void (*func_analyzer_set_mark_line)(analyzer_context *ctx,
         func_analyzer_bio_mark_line f_mark_line, void *p);
 
+typedef int (*func_analyzer_import_bitmap)(analyzer_context *ctx,
+        const unsigned char *data, size_t size, size_t bits_per_pixel,
+        size_t w, size_t h);
 typedef int (*func_analyzer_import_bmp)(analyzer_context *ctx,
         const char *bmp, size_t size);
 typedef int (*func_analyzer_export_bitmap)(analyzer_context *ctx,
-        unsigned char *bitmap, size_t size, size_t *w, size_t *h, size_t *len);
+        unsigned char *buf, size_t size, size_t *w, size_t *h, size_t *len);
 typedef int (*func_analyzer_export_data)(analyzer_context *ctx,
-        unsigned char *data, size_t size, size_t *len);
+        unsigned char *buf, size_t size, size_t *len);
 
 typedef int (*func_analyzer_start)(analyzer_context *ctx);
 typedef int (*func_analyzer_is_running)(analyzer_context *ctx);

@@ -8,6 +8,7 @@
 #include <QTextEdit>
 #include <QLabel>
 #include <QPushButton>
+#include <QImage>
 
 #include "image_viewer.h"
 
@@ -34,6 +35,7 @@ private:
         analyze_state_finish,
         analyze_state_stopped,
     };
+    QImage image;
     QMenuBar *menu_bar;
     QStatusBar *status_bar;
     QLabel *status_bar_time;

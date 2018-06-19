@@ -69,6 +69,11 @@ public:
     QVector<MarkLine> lines;
     QPoint mouse_pos;
     QPixmap origin_image;
+    bool show_border;
+    QLine pixel_border_top;
+    QLine pixel_border_bottom;
+    QLine pixel_border_left;
+    QLine pixel_border_right;
 
 protected:
     void paintEvent(QPaintEvent *evn);

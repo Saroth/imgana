@@ -4,7 +4,6 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QFileDialog>
-#include <QImage>
 #include <QPixmap>
 #include <QMouseEvent>
 
@@ -191,7 +190,6 @@ void MainWindow::open_file(void)
 void MainWindow::image_reload(void)
 {
     QString file = editor_file_path->text();
-    QImage image;
     if (image.load(file) == false) {
         QString err = "Load failed.\nInvalid image file:" + file;
         QMessageBox::warning(this, "Error", err);
@@ -258,14 +256,20 @@ void MainWindow::update_state(void)
         return;
     }
     const QPixmap *pix = image_viewer.origin_pixmap();
-    state_viewer->append(QString("Image size: \t%1x%2")
+    state_viewer->append(QString("Image size:\t%1x%2")
             .arg(pix->width()).arg(pix->height()));
     pix = image_viewer.pixmap();
-    state_viewer->append(QString("Scale size: \t%1x%2(x%3)")
+    state_viewer->append(QString("Scale size:\t%1x%2(x%3)")
             .arg(pix->width()).arg(pix->height()).arg(image_viewer.scale()));
     QPoint pos = image_viewer.mouse_pos();
-    state_viewer->append(QString("Point: \t%1, %2")
-            .arg(pos.x()).arg(pos.y()));
+    state_viewer->append(QString("Point:\t%1, %2") .arg(pos.x()).arg(pos.y()));
+    int r, g, b;
+    QColor color = image.pixelColor(pos);
+    color.getRgb(&r, &g, &b);
+    state_viewer->append(QString("Pixel(RGB):\t%1,%2,%3")
+            .arg(r, 2, 16, QLatin1Char('0'))
+            .arg(g, 2, 16, QLatin1Char('0'))
+            .arg(b, 2, 16, QLatin1Char('0')));
 }
 
 void MainWindow::append_log(QString str)
