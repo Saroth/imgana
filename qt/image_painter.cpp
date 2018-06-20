@@ -96,6 +96,12 @@ bool ImagePainter::event(QEvent *evn)
         mouse_pos = ((QMouseEvent *)evn)->pos();
         mouse_pos.setX((mouse_pos.x() - 1) / image_scale);
         mouse_pos.setY((mouse_pos.y() - 1) / image_scale);
+        if (mouse_pos.x() < 0) {
+            mouse_pos.setX(0);
+        }
+        if (mouse_pos.y() < 0) {
+            mouse_pos.setY(0);
+        }
 
         if (image_scale >= 4) {
             show_border = true;

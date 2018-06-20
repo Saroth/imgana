@@ -1,5 +1,9 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
 #include <dlfcn.h>
+
+#include <unistd.h>
 
 #include "library_loader.h"
 
@@ -28,16 +32,74 @@ static const char *func_name_list[] = {
 };
 
 static void *libana_handler = 0;
-static void *ana_func_list[LIBANA_FUNC_MAX];
-libana_functions *libana = (libana_functions *)ana_func_list;
+static void *func_list[LIBANA_FUNC_MAX];
+const libana_functions *libana = (const libana_functions *)func_list;
+static const char *library_file = "libanalyzer_demo.so";
+static func_analyzer_bio_debug f_debug;
+static void *p_debug;
 
-int libana_init(void)
+int sdb_out_info(const char *file, size_t line, const char *fmt, ...)
 {
+    char buf[1024];
+    va_list va;
+    va_start(va, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, va);
+    va_end(va);
+
+    file = strrchr(file, '\\') ? (strrchr(file, '\\') + 1) :
+        strrchr(file, '/') ? (strrchr(file, '/') + 1) : file;
+    if (f_debug) {
+        return f_debug(p_debug, file, line, buf);
+    }
+    printf("%20s:%04ld  %s", file, line, buf);
     return 0;
 }
 
-const char *libana_version_str(void)
+
+
+void libana_set_debug(func_analyzer_bio_debug f, void *p)
 {
+    f_debug = f;
+    p_debug = p;
+}
+
+void libana_unload(void)
+{
+    sdb_out_info(__FILE__, __LINE__, "close library.");
+    if (libana_handler) {
+        memset(func_list, 0, sizeof(func_list));
+        dlclose(libana_handler);
+    }
+}
+
+int libana_load(void)
+{
+    libana_unload();
+    sdb_out_info(__FILE__, __LINE__, "loading library: %s.", library_file);
+    if ((libana_handler = dlopen(library_file, RTLD_LAZY)) == 0) {
+        sdb_out_info(__FILE__, __LINE__,
+                "library load failed: %s.", dlerror());
+        return LIBANA_ERR_LOAD_LIBRARY_FAILED;
+    }
+
+    unsigned int i = 0;
+    for (; i < LIBANA_FUNC_MAX; i++) {
+        func_list[i] = dlsym(libana_handler, func_name_list[i]);
+        char *err = dlerror();
+        if (err) {
+            sdb_out_info(__FILE__, __LINE__,
+                    "dlsym(%s) error: %s", func_name_list[i], err);
+            dlclose(libana_handler);
+            return LIBANA_ERR_SYMBOL_IS_NOT_FOUND;
+        }
+    }
+
+    sdb_out_info(__FILE__, __LINE__, "load finish.");
     return 0;
+}
+
+int libana_is_available(void)
+{
+    return libana_handler ? 1 : 0;
 }
 

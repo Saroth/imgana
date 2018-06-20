@@ -4,15 +4,6 @@
 extern "C" {
 #endif
 
-/**
- * version format:
- *      0x00AAIIPP
- *      AA: major version
- *      II: minor version
- *      PP: patch
- */
-#define IMGANA_VERSION  0x00000000
-
 unsigned int imgana_version(void);
 const char *imgana_version_str(void);
 

@@ -6,14 +6,18 @@
 #include <QFileDialog>
 #include <QPixmap>
 #include <QMouseEvent>
+#include <QFont>
 
 #include <unistd.h>
 
 #include "main_window.h"
+#include "library_loader.h"
 #include "version.h"
 
-#define WINDOW_WIDTH_DEF    800
-#define WINDOW_HEIGHT_DEF   600
+#define WINDOW_WIDTH_DEF    1200
+#define WINDOW_HEIGHT_DEF   640
+#define EDITOR_FONT         "Monospace"
+#define EDITOR_FONT_SIZE    8
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -29,10 +33,15 @@ void MainWindow::create_menu_bar(void)
     menu_bar = menuBar();
 
     QMenu *file = menu_bar->addMenu("&File");
+    QAction *reload_library = file->addAction("&Reload library");
+    connect(reload_library, &QAction::triggered,
+            this, &MainWindow::load_analyzer);
     QAction *exit = file->addAction("E&xit");
     connect(exit, &QAction::triggered, this, &MainWindow::close);
 
     QMenu *window = menu_bar->addMenu("&Window");
+    QAction *log_toggle = window->addAction("&Log toggle");
+    connect(log_toggle, &QAction::triggered, this, &MainWindow::log_toggle);
     QAction *reset_size = window->addAction("&Reset size");
     connect(reset_size, &QAction::triggered, this, &MainWindow::reset_size);
 
@@ -41,6 +50,16 @@ void MainWindow::create_menu_bar(void)
     connect(about, &QAction::triggered, this, &MainWindow::about);
     QAction *about_qt = help->addAction("About&Qt");
     connect(about_qt, &QAction::triggered, this, &MainWindow::about_qt);
+}
+
+void MainWindow::log_toggle(void)
+{
+    if (log_viewer->isHidden()) {
+        log_viewer->show();
+    }
+    else {
+        log_viewer->hide();
+    }
 }
 
 void MainWindow::reset_size(void)
@@ -53,7 +72,11 @@ void MainWindow::about(void)
     QString msg;
     msg.append("Image Analyzer\n");
     msg.append("\n");
-    msg.append(QString("version %1\n").arg(imgana_version_str()));
+    msg.append(QString("version: %1\n").arg(imgana_version_str()));
+    if (libana_is_available()) {
+        msg.append(QString("library version: %1\n")
+                .arg(libana->version_str()));
+    }
     QMessageBox::about(this, "About", msg);
 }
 
@@ -117,20 +140,25 @@ void MainWindow::create_central(void)
     QLabel *label_file_path = new QLabel("&Path:");
     label_file_path->setBuddy(editor_file_path);
     state_viewer = new QTextEdit();
-    state_viewer->setMaximumHeight(100);
-    state_viewer->setReadOnly(true);
     QPalette state_pal;
     state_pal.setColor(QPalette::Base, QColor(0xF8, 0xF8, 0xF8));
     state_viewer->setPalette(state_pal);
+    state_viewer->setFont(QFont(EDITOR_FONT, EDITOR_FONT_SIZE));
+    state_viewer->setMinimumWidth(
+            state_viewer->fontMetrics().width(QChar('x')) * 32);
+    state_viewer->setMaximumHeight(100);
+    state_viewer->setReadOnly(true);
     log_viewer = new QTextEdit();
-    log_viewer->setMaximumWidth(600);
-    log_viewer->setMinimumWidth(200);
-    log_viewer->setReadOnly(true);
-    log_viewer->append("Ready.");
     QPalette log_pal;
     log_pal.setColor(QPalette::Base, QColor(0x20, 0x20, 0x20));
     log_pal.setColor(QPalette::Text, QColor(0xE0, 0xE0, 0xE0));
     log_viewer->setPalette(log_pal);
+    log_viewer->setFont(QFont(EDITOR_FONT, EDITOR_FONT_SIZE));
+    int w = log_viewer->fontMetrics().width(QChar('x')) * 100;
+    log_viewer->setMinimumWidth(w);
+    log_viewer->setMaximumWidth(w * 2);
+    log_viewer->setReadOnly(true);
+    // log_viewer->hide();
 
     QHBoxLayout *layout_embedded_button = new QHBoxLayout();
     layout_embedded_button->setMargin(0);
@@ -256,24 +284,43 @@ void MainWindow::update_state(void)
         return;
     }
     const QPixmap *pix = image_viewer.origin_pixmap();
-    state_viewer->append(QString("Image size:\t%1x%2")
+    state_viewer->append(QString("Image size: %1x%2")
             .arg(pix->width()).arg(pix->height()));
     pix = image_viewer.pixmap();
-    state_viewer->append(QString("Scale size:\t%1x%2(x%3)")
+    state_viewer->append(QString("Scale size: %1x%2(x%3)")
             .arg(pix->width()).arg(pix->height()).arg(image_viewer.scale()));
     QPoint pos = image_viewer.mouse_pos();
-    state_viewer->append(QString("Point:\t%1, %2") .arg(pos.x()).arg(pos.y()));
+    state_viewer->append(QString("Point:      %1, %2")
+            .arg(pos.x()).arg(pos.y()));
     int r, g, b;
     QColor color = image.pixelColor(pos);
     color.getRgb(&r, &g, &b);
-    state_viewer->append(QString("Pixel(RGB):\t%1,%2,%3")
+    state_viewer->append(QString("Pixel(RGB): %1,%2,%3")
             .arg(r, 2, 16, QLatin1Char('0'))
             .arg(g, 2, 16, QLatin1Char('0'))
             .arg(b, 2, 16, QLatin1Char('0')));
 }
 
+
 void MainWindow::append_log(QString str)
 {
     log_viewer->append(str);
+}
+
+void MainWindow::load_analyzer(void)
+{
+    append_log("# load analyzer library...");
+    int ret = libana_load();
+    if (ret) {
+        append_log(QString("# bad analyzer library, return:-%1.")
+                .arg(-ret, 0, 16));
+    }
+    if (libana_is_available()) {
+        append_log("# analyzer is ready.");
+        append_log("# ====");
+    }
+    else {
+        append_log("# analyzer load failed!");
+    }
 }
 

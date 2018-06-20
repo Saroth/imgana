@@ -9,7 +9,7 @@
  *      II: minor version
  *      PP: patch
  */
-#define ANALYZER_VERSION    0x00000000
+#define ANALYZER_VERSION    0x00000001
 
 static char version_string[32];
 

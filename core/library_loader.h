@@ -7,6 +7,10 @@ extern "C" {
 #include "libanalyzer.h"
 
 typedef enum {
+    LIBANA_ERR_LOAD_LIBRARY_FAILED  = -0x100,
+    LIBANA_ERR_SYMBOL_IS_NOT_FOUND  = -0x101,
+} libana_err_t;
+typedef enum {
     LIBANA_INIT = 0,
     LIBANA_FREE,
 
@@ -46,11 +50,13 @@ typedef struct {
     func_analyzer_version               version;
     func_analyzer_version_str           version_str;
 } libana_functions;
-extern libana_functions *libana;
+extern const libana_functions *libana;
 
-int libana_init(void);
-
-const char *libana_version_str(void);
+void libana_init(void);
+void libana_set_debug(func_analyzer_bio_debug f, void *p);
+void libana_unload(void);
+int libana_load(void);
+int libana_is_available(void);
 
 #if defined(__cplusplus)
 }

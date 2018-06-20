@@ -2,6 +2,15 @@
 
 #include "version.h"
 
+/**
+ * version format:
+ *      0x00AAIIPP
+ *      AA: major version
+ *      II: minor version
+ *      PP: patch
+ */
+#define IMGANA_VERSION  0x00000001
+
 static char version_string[32];
 
 unsigned int imgana_version(void)

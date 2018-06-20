@@ -22,6 +22,9 @@ public:
 
     void append_log(QString str);
 
+public slots:
+    void load_analyzer(void);
+
 protected:
     void resizeEvent(QResizeEvent *event);
     void mouseMoveEvent(QMouseEvent *evn);
@@ -56,6 +59,7 @@ private:
     void create_central(void);
 
 private slots:
+    void log_toggle(void);
     void reset_size(void);
     void about(void);
     void about_qt(void);
