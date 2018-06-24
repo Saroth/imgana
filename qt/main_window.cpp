@@ -11,7 +11,6 @@
 #include <unistd.h>
 
 #include "main_window.h"
-#include "library_loader.h"
 #include "version.h"
 
 #define WINDOW_WIDTH_DEF    1200
@@ -73,9 +72,9 @@ void MainWindow::about(void)
     msg.append("Image Analyzer\n");
     msg.append("\n");
     msg.append(QString("version: %1\n").arg(imgana_version_str()));
-    if (libana_is_available()) {
+    if (libana.is_loaded()) {
         msg.append(QString("library version: %1\n")
-                .arg(libana->version_str()));
+                .arg(libana.library_version()));
     }
     QMessageBox::about(this, "About", msg);
 }
@@ -114,6 +113,7 @@ void MainWindow::create_central(void)
 {
     file_path = "./images/";
     ana_stat = analyze_state_none;
+    libana.set_debug(callback_debug, this);
 
     button_open = new QPushButton("&Open");
     button_open->setFixedWidth(button_open->fontMetrics().width(
@@ -225,8 +225,10 @@ void MainWindow::image_reload(void)
     image_viewer.set_pixmap(QPixmap::fromImage(image));
 
     button_unload->setEnabled(true);
-    button_analyze->setEnabled(true);
-    ana_stat = analyze_state_none;
+    if (libana.is_loaded()) {
+        button_analyze->setEnabled(true);
+        ana_stat = analyze_state_none;
+    }
     update_state();
 }
 
@@ -248,13 +250,13 @@ void MainWindow::image_analyze(void)
     button_stop->setEnabled(true);
     ana_stat = analyze_state_running;
 
-    // ...
+    libana.start();
     update_state();
 }
 
 void MainWindow::image_analyze_stop(void)
 {
-    // ...
+    libana.stop();
 
     editor_file_path->setEnabled(true);
     button_open->setEnabled(true);
@@ -302,6 +304,20 @@ void MainWindow::update_state(void)
 }
 
 
+int MainWindow::callback_debug(void *p, const char *file, size_t line,
+        const char *str)
+{
+    QString s;
+    if (file) {
+        s += QString("%1:%2  ").arg(file, 20)
+            .arg(line, 4, 10, QLatin1Char('0'));
+    }
+    s += str;
+    MainWindow *mw = (MainWindow *)p;
+    mw->append_log(s);
+    return 0;
+}
+
 void MainWindow::append_log(QString str)
 {
     log_viewer->append(str);
@@ -310,12 +326,12 @@ void MainWindow::append_log(QString str)
 void MainWindow::load_analyzer(void)
 {
     append_log("# load analyzer library...");
-    int ret = libana_load();
+    int ret = libana.load();
     if (ret) {
         append_log(QString("# bad analyzer library, return:-%1.")
                 .arg(-ret, 0, 16));
     }
-    if (libana_is_available()) {
+    if (libana.is_loaded()) {
         append_log("# analyzer is ready.");
         append_log("# ====");
     }

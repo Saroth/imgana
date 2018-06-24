@@ -11,6 +11,7 @@
 #include <QImage>
 
 #include "image_viewer.h"
+#include "library_loader.h"
 
 class MainWindow : public QMainWindow
 {
@@ -18,9 +19,6 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow() { };
-
-    void append_log(QString str);
 
 public slots:
     void load_analyzer(void);
@@ -31,7 +29,18 @@ protected:
     void wheelEvent(QWheelEvent *evn);
     void update_state(void);
 
+    void append_log(QString str);
+    static int callback_debug(void *p, const char *file, size_t line,
+            const char *str);
+    static int callback_mark_point(void *p,
+            size_t x, size_t y, size_t width, int r, int g, int b);
+    static int callback_mark_line(void *p,
+            size_t x1, size_t y1, size_t x2, size_t y2, size_t width,
+            int r, int g, int b);
+
 private:
+    LibraryLoader libana;
+
     enum analyze_state {
         analyze_state_none,
         analyze_state_running,

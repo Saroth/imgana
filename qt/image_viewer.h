@@ -19,7 +19,6 @@ public:
             QColor color = QColor(0xFF, 0xFF, 0xFF), qreal width = 1) {
         set_point(xpos, ypos, color, width);
     };
-    ~MarkPoint() { };
 
     void set_point(int xpos, int ypos,
             QColor color = QColor(0xFF, 0xFF, 0xFF), qreal width = 1);
@@ -40,7 +39,6 @@ public:
             QColor color = QColor(0xFF, 0xFF, 0xFF), qreal width = 1) {
         set_line(line, color, width);
     };
-    ~MarkLine() { };
 
     void set_line(QLine line,
             QColor color = QColor(0xFF, 0xFF, 0xFF), qreal width = 1);
@@ -60,7 +58,6 @@ class ImagePainter : public QLabel
 
 public:
     explicit ImagePainter(QWidget *parent = 0);
-    ~ImagePainter() { };
     void set_scale(double s);
     void set_pixmap(const QPixmap &pixmap);
     void set_text(const QString &text);
@@ -92,7 +89,6 @@ class ImageViewer : public QScrollArea
 
 public:
     explicit ImageViewer(QWidget *parent = 0);
-    ~ImageViewer() { };
 
     void set_pixmap(const QPixmap &pixmap = QPixmap(""));
     const QPixmap *pixmap(void);

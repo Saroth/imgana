@@ -1,65 +1,89 @@
 #ifndef __LIBRARY_LOADER_H__
 #define __LIBRARY_LOADER_H__
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 #include "libanalyzer.h"
 
-typedef enum {
-    LIBANA_ERR_LOAD_LIBRARY_FAILED  = -0x100,
-    LIBANA_ERR_SYMBOL_IS_NOT_FOUND  = -0x101,
-} libana_err_t;
-typedef enum {
-    LIBANA_INIT = 0,
-    LIBANA_FREE,
+class LibraryLoader
+{
+public:
+    enum libana_err_t {
+        LIBANA_ERR_LOAD_LIBRARY_FAILED      = -0x100,
+        LIBANA_ERR_SYMBOL_IS_NOT_FOUND      = -0x101,
+        LIBANA_ERR_LIBRARY_NOT_LOADED       = -0x102,
+    };
+    LibraryLoader();
 
-    LIBANA_SET_MEMORY_ALLOC,
-    LIBANA_SET_DEBUG,
-    LIBANA_SET_MARK_POINT,
-    LIBANA_SET_MARK_LINE,
+    void set_debug(int (*f)(void *, const char *, size_t, const char *),
+            void *p);
 
-    LIBANA_IMPORT_BITMAP,
-    LIBANA_IMPORT_BMP,
-    LIBANA_EXPORT_BITMAP,
-    LIBANA_EXPORT_DATA,
+    int load();
+    int load(const char *filename);
+    void unload();
+    bool is_loaded();
+    const char *library_version(void);
 
-    LIBANA_START,
-    LIBANA_IS_RUNNING,
-    LIBANA_STOP,
+    int routine();
+    void exit();
+    bool is_running();
+    void start();
+    void stop();
+    bool is_busy();
 
-    LIBANA_VERSION,
-    LIBANA_VERSION_STR,
+private:
+    enum lib_func_type {
+        LIBANA_INIT = 0,
+        LIBANA_FREE,
 
-    LIBANA_FUNC_MAX,
-} lib_func_type;
-typedef struct {
-    func_analyzer_init                  init;
-    func_analyzer_free                  free;
-    func_analyzer_set_memory_alloc      set_memory_alloc;
-    func_analyzer_set_debug             set_debug;
-    func_analyzer_set_mark_point        set_mark_point;
-    func_analyzer_set_mark_line         set_mark_line;
-    func_analyzer_import_bitmap         import_bitmap;
-    func_analyzer_import_bmp            import_bmp;
-    func_analyzer_export_bitmap         export_bitmap;
-    func_analyzer_export_data           export_data;
-    func_analyzer_start                 start;
-    func_analyzer_is_running            is_running;
-    func_analyzer_stop                  stop;
-    func_analyzer_version               version;
-    func_analyzer_version_str           version_str;
-} libana_functions;
-extern const libana_functions *libana;
+        LIBANA_SET_MEMORY_ALLOC,
+        LIBANA_SET_DEBUG,
+        LIBANA_SET_MARK_POINT,
+        LIBANA_SET_MARK_LINE,
 
-void libana_init(void);
-void libana_set_debug(func_analyzer_bio_debug f, void *p);
-void libana_unload(void);
-int libana_load(void);
-int libana_is_available(void);
+        LIBANA_IMPORT_BITMAP,
+        LIBANA_IMPORT_BMP,
+        LIBANA_EXPORT_BITMAP,
+        LIBANA_EXPORT_DATA,
 
-#if defined(__cplusplus)
-}
-#endif
+        LIBANA_START,
+        LIBANA_IS_RUNNING,
+        LIBANA_STOP,
+
+        LIBANA_VERSION,
+        LIBANA_VERSION_STR,
+
+        LIBANA_FUNC_MAX,
+    };
+    typedef struct {
+        func_analyzer_init                  init;
+        func_analyzer_free                  free;
+        func_analyzer_set_memory_alloc      set_memory_alloc;
+        func_analyzer_set_debug             set_debug;
+        func_analyzer_set_mark_point        set_mark_point;
+        func_analyzer_set_mark_line         set_mark_line;
+        func_analyzer_import_bitmap         import_bitmap;
+        func_analyzer_import_bmp            import_bmp;
+        func_analyzer_export_bitmap         export_bitmap;
+        func_analyzer_export_data           export_data;
+        func_analyzer_start                 start;
+        func_analyzer_is_running            is_running;
+        func_analyzer_stop                  stop;
+        func_analyzer_version               version;
+        func_analyzer_version_str           version_str;
+    } libana_functions;
+    const libana_functions *funcs;
+    void *func_list[LIBANA_FUNC_MAX];
+    void *handler;
+    analyzer_context context;
+    bool flag_running;
+    bool flag_routine;
+    bool flag_analyze;
+
+    int (*f_debug)(void *, const char *, size_t, const char *);
+    void *p_debug;
+
+    int sdb_out_info(const char *file, size_t line, const char *fmt, ...);
+
+};
+
 #endif /* __LIBRARY_LOADER_H__ */
 
