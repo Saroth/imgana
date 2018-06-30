@@ -19,13 +19,14 @@ public:
 
     LibraryLoader *analyzer();
     void set_task(enum thread_task task);
+    AnalyzerThread::thread_task task();
     void stop();
 
 protected:
     virtual void run() Q_DECL_OVERRIDE;
 
 private:
-    enum thread_task task;
+    enum thread_task task_id;
     LibraryLoader *libana;
 
     void load_library();

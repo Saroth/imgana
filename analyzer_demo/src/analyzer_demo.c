@@ -62,7 +62,7 @@ int analyzer_export_data(analyzer_context *ctx,
 }
 
 
-int analyzer_start(analyzer_context *ctx)
+int analyzer_start(analyzer_context *ctx, int type)
 {
     return 0;
 }

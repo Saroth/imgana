@@ -22,10 +22,8 @@ public:
     bool is_loaded();
     const char *library_version(void);
 
-    int routine();
-    void exit();
+    int run(int type = 0);
     bool is_running();
-    void start();
     void stop();
     bool is_busy();
 
@@ -75,8 +73,6 @@ private:
     void *handler;
     analyzer_context context;
     bool flag_running;
-    bool flag_routine;
-    bool flag_analyze;
 
     int (*f_debug)(void *, const char *, size_t, const char *);
     void *p_debug;

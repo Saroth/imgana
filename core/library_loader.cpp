@@ -36,8 +36,6 @@ static const char *func_name_list[] = {
 LibraryLoader::LibraryLoader()
 {
     flag_running = false;
-    flag_routine = false;
-    flag_analyze = false;
     handler = 0;
     f_debug = 0;
     memset(func_list, 0, sizeof(func_list));
@@ -125,13 +123,12 @@ const char *LibraryLoader::library_version(void)
 
 
 
-int LibraryLoader::routine()
+int LibraryLoader::run(int type)
 {
     if (!is_loaded()) {
         sdb_out_info(__FILE__, __LINE__, "library not loaded.");
         return LIBANA_ERR_LIBRARY_NOT_LOADED;
     }
-    flag_routine = true;
     flag_running = true;
     funcs->init(&context);
     funcs->set_memory_alloc(&context, 0, 0, 0);
@@ -141,16 +138,9 @@ int LibraryLoader::routine()
     funcs->set_mark_line(&context, 0, 0);
 #warning "TODO: import image"
     funcs->import_bmp(&context, 0, 0);
-    while (flag_routine) {
-        if (!flag_analyze) {
-            usleep(100000);
-        }
-
-        int ret = funcs->start(&context);
-        if (ret) {
-            sdb_out_info(__FILE__, __LINE__, "analyze failed, return:%x.", ret);
-        }
-        flag_analyze = false;
+    int ret = funcs->start(&context, type);
+    if (ret) {
+        sdb_out_info(__FILE__, __LINE__, "analyze failed, return:%x.", ret);
     }
     funcs->free(&context);
     flag_running = false;
@@ -158,24 +148,9 @@ int LibraryLoader::routine()
     return 0;
 }
 
-void LibraryLoader::exit()
-{
-    flag_routine = false;
-}
-
 bool LibraryLoader::is_running()
 {
     return flag_running;
-}
-
-void LibraryLoader::start()
-{
-    if (!is_running()) {
-        sdb_out_info(__FILE__, __LINE__, "analyzer is not running.");
-        return;
-    }
-    sdb_out_info(__FILE__, __LINE__, "start analyzer.");
-    flag_analyze = true;
 }
 
 void LibraryLoader::stop()

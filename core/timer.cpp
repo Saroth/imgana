@@ -33,22 +33,17 @@ struct timespec Timer::stop()
     stoped = true;
     time_count.tv_sec += time_cur.tv_sec - time_start.tv_sec;
     time_count.tv_nsec += time_cur.tv_nsec - time_start.tv_nsec;
-    time_start.tv_sec = 0;
-    time_start.tv_nsec = 0;
-    time_cur.tv_sec = 0;
-    time_cur.tv_nsec = 0;
+    time_start = { 0, 0, };
+    time_cur = { 0, 0, };
 
     return time_count;
 }
 
 void Timer::reset()
 {
-    time_count.tv_sec = 0;
-    time_count.tv_nsec = 0;
-    time_start.tv_sec = 0;
-    time_start.tv_nsec = 0;
-    time_cur.tv_sec = 0;
-    time_cur.tv_nsec = 0;
+    time_count = { 0, 0, };
+    time_start = { 0, 0, };
+    time_cur = { 0, 0, };
     stoped = true;
 }
 

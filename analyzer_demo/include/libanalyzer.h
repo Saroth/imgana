@@ -53,7 +53,7 @@ int analyzer_export_bitmap(analyzer_context *ctx,
 int analyzer_export_data(analyzer_context *ctx,
         unsigned char *buf, size_t size, size_t *len);
 
-int analyzer_start(analyzer_context *ctx);
+int analyzer_start(analyzer_context *ctx, int type);
 int analyzer_is_running(analyzer_context *ctx);
 int analyzer_stop(analyzer_context *ctx);
 
@@ -83,7 +83,7 @@ typedef int (*func_analyzer_export_bitmap)(analyzer_context *ctx,
 typedef int (*func_analyzer_export_data)(analyzer_context *ctx,
         unsigned char *buf, size_t size, size_t *len);
 
-typedef int (*func_analyzer_start)(analyzer_context *ctx);
+typedef int (*func_analyzer_start)(analyzer_context *ctx, int type);
 typedef int (*func_analyzer_is_running)(analyzer_context *ctx);
 typedef int (*func_analyzer_stop)(analyzer_context *ctx);
 

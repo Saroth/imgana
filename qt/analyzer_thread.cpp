@@ -10,15 +10,13 @@ AnalyzerThread::AnalyzerThread(QObject *parent)
 {
     libana = new LibraryLoader();
     libana->set_debug(cb_output_log, this);
-    task = thread_task_load;
-    // printf("thead inited.\n");
+    task_id = thread_task_load;
 }
 
 AnalyzerThread::~AnalyzerThread()
 {
     stop();
     quit();
-    // printf("thead quit.\n");
 }
 
 
@@ -57,7 +55,12 @@ int AnalyzerThread::cb_output_mark_line(void *p,
 
 void AnalyzerThread::set_task(enum thread_task task)
 {
-    this->task = task;
+    task_id = task;
+}
+
+AnalyzerThread::thread_task AnalyzerThread::task()
+{
+    return task_id;
 }
 
 LibraryLoader *AnalyzerThread::analyzer()
@@ -79,6 +82,10 @@ void AnalyzerThread::load_library()
 
 void AnalyzerThread::analyze_image()
 {
+    sdb_out_info(__FILE__, __LINE__, "run analyzer, mode:%d", 0);
+    int ret = libana->run();
+    sdb_out_info(__FILE__, __LINE__, "analyzer finished, return:%d(%s%#x)",
+            ret, ret > 0 ? "" : "-", ret > 0 ? ret : -ret);
 }
 
 void AnalyzerThread::stop()
@@ -88,14 +95,14 @@ void AnalyzerThread::stop()
 
 void AnalyzerThread::run()
 {
-    if (task == thread_task_load) {
+    if (task_id == thread_task_load) {
         load_library();
     }
-    else if (task == thread_task_analyze) {
+    else if (task_id == thread_task_analyze) {
         analyze_image();
     }
     else {
-        sdb_out_info(__FILE__, __LINE__, "unknown task: %d", task);
+        sdb_out_info(__FILE__, __LINE__, "unknown task id: %d", task_id);
     }
 }
 

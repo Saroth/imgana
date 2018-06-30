@@ -38,7 +38,8 @@ private:
     };
     enum analyze_state ana_stat;
     AnalyzerThread *libana_thread;
-    Timer timer;
+    Timer analyze_timer;
+    struct timespec analyze_time;
 
     QImage image;
     QMenuBar *menu_bar;
@@ -60,7 +61,8 @@ private:
     void create_central();
 
 private slots:
-    void reload_analyzer();
+    void load_analyzer();
+    void unload_analyzer();
     void log_toggle();
     void reset_size();
     void about();
