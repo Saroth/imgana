@@ -8,8 +8,6 @@
 #include <QMouseEvent>
 #include <QFont>
 
-#include <unistd.h>
-
 #include "main_window.h"
 #include "version.h"
 
@@ -25,6 +23,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     create_menu_bar();
     create_status_bar();
     create_central();
+
+    ana_stat = analyze_state_none;
+    qRegisterMetaType<size_t>("size_t");
+    qRegisterMetaType<QTextCursor>("QTextCursor");
+    libana_thread = new AnalyzerThread(this);
+    connect(libana_thread, &AnalyzerThread::output_log,
+            this, &MainWindow::output_log);
+    connect(libana_thread, &AnalyzerThread::finished,
+            this, &MainWindow::image_analyze_stop);
 }
 
 void MainWindow::create_menu_bar(void)
@@ -34,7 +41,7 @@ void MainWindow::create_menu_bar(void)
     QMenu *file = menu_bar->addMenu("&File");
     QAction *reload_library = file->addAction("&Reload library");
     connect(reload_library, &QAction::triggered,
-            this, &MainWindow::load_analyzer);
+            this, &MainWindow::reload_analyzer);
     QAction *exit = file->addAction("E&xit");
     connect(exit, &QAction::triggered, this, &MainWindow::close);
 
@@ -49,6 +56,15 @@ void MainWindow::create_menu_bar(void)
     connect(about, &QAction::triggered, this, &MainWindow::about);
     QAction *about_qt = help->addAction("About&Qt");
     connect(about_qt, &QAction::triggered, this, &MainWindow::about_qt);
+}
+
+void MainWindow::reload_analyzer(void)
+{
+    if (libana_thread->isRunning()) {
+        log_viewer->append("thread is running, abort");
+        return;
+    }
+    libana_thread->start();
 }
 
 void MainWindow::log_toggle(void)
@@ -72,9 +88,9 @@ void MainWindow::about(void)
     msg.append("Image Analyzer\n");
     msg.append("\n");
     msg.append(QString("version: %1\n").arg(imgana_version_str()));
-    if (libana.is_loaded()) {
+    if (libana_thread->analyzer()->is_loaded()) {
         msg.append(QString("library version: %1\n")
-                .arg(libana.library_version()));
+                .arg(libana_thread->analyzer()->library_version()));
     }
     QMessageBox::about(this, "About", msg);
 }
@@ -112,8 +128,6 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 void MainWindow::create_central(void)
 {
     file_path = "./images/";
-    ana_stat = analyze_state_none;
-    libana.set_debug(callback_debug, this);
 
     button_open = new QPushButton("&Open");
     button_open->setFixedWidth(button_open->fontMetrics().width(
@@ -221,11 +235,12 @@ void MainWindow::image_reload(void)
     if (image.load(file) == false) {
         QString err = "Load failed.\nInvalid image file:" + file;
         QMessageBox::warning(this, "Error", err);
+        return;
     }
     image_viewer.set_pixmap(QPixmap::fromImage(image));
 
     button_unload->setEnabled(true);
-    if (libana.is_loaded()) {
+    if (libana_thread->analyzer()->is_loaded()) {
         button_analyze->setEnabled(true);
         ana_stat = analyze_state_none;
     }
@@ -250,21 +265,33 @@ void MainWindow::image_analyze(void)
     button_stop->setEnabled(true);
     ana_stat = analyze_state_running;
 
-    libana.start();
+    libana_thread->set_task(AnalyzerThread::thread_task_analyze);
+    libana_thread->start();
     update_state();
 }
 
 void MainWindow::image_analyze_stop(void)
 {
-    libana.stop();
-
-    editor_file_path->setEnabled(true);
-    button_open->setEnabled(true);
-    button_reload->setEnabled(true);
-    button_unload->setEnabled(true);
-    button_analyze->setEnabled(true);
     button_stop->setDisabled(true);
-    ana_stat = analyze_state_stopped;
+    if (libana_thread->isRunning()) {
+        libana_thread->stop();
+        ana_stat = analyze_state_stopping;
+    }
+    else {
+        editor_file_path->setEnabled(true);
+        button_open->setEnabled(true);
+        button_reload->setEnabled(true);
+        if (!image_viewer.is_empty()) {
+            button_unload->setEnabled(true);
+            button_analyze->setEnabled(true);
+        }
+        if (ana_stat == analyze_state_stopping) {
+            ana_stat = analyze_state_none;
+        }
+        else {
+            ana_stat = analyze_state_stopped;
+        }
+    }
     update_state();
 }
 
@@ -304,39 +331,30 @@ void MainWindow::update_state(void)
 }
 
 
-int MainWindow::callback_debug(void *p, const char *file, size_t line,
-        const char *str)
+int MainWindow::output_log(void *p, const char *file, size_t line, QString str)
 {
     QString s;
     if (file) {
-        s += QString("%1:%2  ").arg(file, 20)
-            .arg(line, 4, 10, QLatin1Char('0'));
+        // s.append(QString("%1:%2:%3  ").arg((size_t)p, 0, 16).arg(file, 20)
+        //     .arg(line, 4, 10, QLatin1Char('0')));
+        s.append(QString("%1:%2  ").arg(file, 20)
+            .arg(line, 4, 10, QLatin1Char('0')));
     }
-    s += str;
-    MainWindow *mw = (MainWindow *)p;
-    mw->append_log(s);
+    s.append(str);
+    log_viewer->append(s);
     return 0;
 }
 
-void MainWindow::append_log(QString str)
+int MainWindow::output_mark_point(void *p,
+        size_t x, size_t y, size_t width, int r, int g, int b)
 {
-    log_viewer->append(str);
+    return 0;
 }
 
-void MainWindow::load_analyzer(void)
+int MainWindow::output_mark_line(void *p,
+        size_t x1, size_t y1, size_t x2, size_t y2, size_t width,
+        int r, int g, int b)
 {
-    append_log("# load analyzer library...");
-    int ret = libana.load();
-    if (ret) {
-        append_log(QString("# bad analyzer library, return:-%1.")
-                .arg(-ret, 0, 16));
-    }
-    if (libana.is_loaded()) {
-        append_log("# analyzer is ready.");
-        append_log("# ====");
-    }
-    else {
-        append_log("# analyzer load failed!");
-    }
+    return 0;
 }
 

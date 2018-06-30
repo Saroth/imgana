@@ -2,8 +2,6 @@
 #include <QScrollBar>
 #include <math.h>
 
-#include <unistd.h>
-
 #include "image_viewer.h"
 
 #define DEFAULT_TEXT "No image loaded."

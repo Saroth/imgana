@@ -33,7 +33,8 @@ static const char *func_name_list[] = {
 };
 
 
-LibraryLoader::LibraryLoader() {
+LibraryLoader::LibraryLoader()
+{
     flag_running = false;
     flag_routine = false;
     flag_analyze = false;
@@ -58,7 +59,7 @@ int LibraryLoader::sdb_out_info(const char *file, size_t line,
         return f_debug(p_debug, file, line, buf);
     }
 
-    return printf("%20s:%04ld  %s", file, line, buf);
+    return printf("%20s:%04ld  %s\n", file, line, buf);
 }
 
 
@@ -94,6 +95,7 @@ int LibraryLoader::load()
     }
     handler = h;
 
+    sdb_out_info(__FILE__, __LINE__, "library version: %s", library_version());
     sdb_out_info(__FILE__, __LINE__, "load successfully.");
     return 0;
 }

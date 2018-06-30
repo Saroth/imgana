@@ -11,7 +11,9 @@
 #include <QImage>
 
 #include "image_viewer.h"
+#include "analyzer_thread.h"
 #include "library_loader.h"
+#include "timer.h"
 
 class MainWindow : public QMainWindow
 {
@@ -20,33 +22,24 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
 
-public slots:
-    void load_analyzer(void);
-
 protected:
     void resizeEvent(QResizeEvent *event);
     void mouseMoveEvent(QMouseEvent *evn);
     void wheelEvent(QWheelEvent *evn);
-    void update_state(void);
-
-    void append_log(QString str);
-    static int callback_debug(void *p, const char *file, size_t line,
-            const char *str);
-    static int callback_mark_point(void *p,
-            size_t x, size_t y, size_t width, int r, int g, int b);
-    static int callback_mark_line(void *p,
-            size_t x1, size_t y1, size_t x2, size_t y2, size_t width,
-            int r, int g, int b);
+    void update_state();
 
 private:
-    LibraryLoader libana;
-
     enum analyze_state {
         analyze_state_none,
         analyze_state_running,
         analyze_state_finish,
+        analyze_state_stopping,
         analyze_state_stopped,
     };
+    enum analyze_state ana_stat;
+    AnalyzerThread *libana_thread;
+    Timer timer;
+
     QImage image;
     QMenuBar *menu_bar;
     QStatusBar *status_bar;
@@ -61,23 +54,31 @@ private:
     QPushButton *button_unload;
     QPushButton *button_analyze;
     QPushButton *button_stop;
-    enum analyze_state ana_stat;
 
-    void create_menu_bar(void);
-    void create_status_bar(void);
-    void create_central(void);
+    void create_menu_bar();
+    void create_status_bar();
+    void create_central();
 
 private slots:
-    void log_toggle(void);
-    void reset_size(void);
-    void about(void);
-    void about_qt(void);
-    void status_bar_update_time(void);
-    void open_file(void);
-    void image_reload(void);
-    void image_unload(void);
-    void image_analyze(void);
-    void image_analyze_stop(void);
+    void reload_analyzer();
+    void log_toggle();
+    void reset_size();
+    void about();
+    void about_qt();
+    void status_bar_update_time();
+    void open_file();
+    void image_reload();
+    void image_unload();
+    void image_analyze();
+    void image_analyze_stop();
+
+    int output_log(void *p, const char *file, size_t line, QString str);
+    int output_mark_point(void *p,
+            size_t x, size_t y, size_t width, int r, int g, int b);
+    int output_mark_line(void *p,
+            size_t x1, size_t y1, size_t x2, size_t y2, size_t width,
+            int r, int g, int b);
+
 
 };
 
