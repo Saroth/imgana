@@ -22,8 +22,8 @@ public:
 
     void set_point(int xpos, int ypos,
             QColor color = QColor(0xFF, 0xFF, 0xFF), qreal width = 1);
-    QPoint point(void) const { return po; }
-    QPen pen(void) const { return pe; }
+    QPoint point() const { return po; }
+    QPen pen() const { return pe; }
 
 private:
     QPoint po;
@@ -42,8 +42,8 @@ public:
 
     void set_line(QLine line,
             QColor color = QColor(0xFF, 0xFF, 0xFF), qreal width = 1);
-    QLine line(void) const { return li; }
-    QPen pen(void) const { return pe; }
+    QLine line() const { return li; }
+    QPen pen() const { return pe; }
 
 
 private:
@@ -91,17 +91,18 @@ public:
     explicit ImageViewer(QWidget *parent = 0);
 
     void set_pixmap(const QPixmap &pixmap = QPixmap(""));
-    const QPixmap *pixmap(void);
-    const QPixmap *origin_pixmap(void);
-    void show_scale(void);
-    void remove_scale_by_timer(void);
+    const QPixmap *pixmap();
+    const QPixmap *origin_pixmap();
+    void show_scale();
+    void remove_scale_by_timer();
     void set_scale(double s = 1.0);
-    double scale(void);
-    bool is_empty(void);
-    QPoint mouse_pos(void);
+    double scale();
+    bool is_empty();
+    QPoint mouse_pos();
+    void clear_marks();
 
-    QVector<MarkPoint> *points(void) { return &painter.points; }
-    QVector<MarkLine> *lines(void) { return &painter.lines; }
+    QVector<MarkPoint> *points() { return &painter.points; }
+    QVector<MarkLine> *lines() { return &painter.lines; }
 
 protected:
     bool eventFilter(QObject *obj, QEvent *evn);

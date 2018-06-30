@@ -46,7 +46,8 @@ int analyzer_import_bitmap(analyzer_context *ctx,
 {
     return 0;
 }
-int analyzer_import_bmp(analyzer_context *ctx, const char *bmp, size_t size)
+int analyzer_import_bmp(analyzer_context *ctx,
+        const unsigned char *bmp, size_t size)
 {
     return 0;
 }

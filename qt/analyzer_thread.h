@@ -18,6 +18,7 @@ public:
     ~AnalyzerThread();
 
     LibraryLoader *analyzer();
+    void set_image(const QString filename);
     void set_task(enum thread_task task);
     AnalyzerThread::thread_task task();
     void stop();
@@ -33,6 +34,10 @@ private:
     void analyze_image();
 
     int sdb_out_info(const char *file, size_t line, const char *fmt, ...);
+    int sdb_out_mark_point(size_t x, size_t y,
+            size_t width, int r, int g, int b);
+    int sdb_out_mark_line(size_t x1, size_t y1, size_t x2, size_t y2,
+            size_t width, int r, int g, int b);
     static int cb_output_log(void *p,
             const char *file, size_t line, const char *str);
     static int cb_output_mark_point(void *p,

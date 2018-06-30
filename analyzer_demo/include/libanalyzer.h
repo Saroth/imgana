@@ -77,7 +77,7 @@ typedef int (*func_analyzer_import_bitmap)(analyzer_context *ctx,
         const unsigned char *data, size_t size, size_t bits_per_pixel,
         size_t w, size_t h);
 typedef int (*func_analyzer_import_bmp)(analyzer_context *ctx,
-        const char *bmp, size_t size);
+        const unsigned char *bmp, size_t size);
 typedef int (*func_analyzer_export_bitmap)(analyzer_context *ctx,
         unsigned char *buf, size_t size, size_t *w, size_t *h, size_t *len);
 typedef int (*func_analyzer_export_data)(analyzer_context *ctx,

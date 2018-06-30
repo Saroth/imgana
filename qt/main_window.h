@@ -71,7 +71,7 @@ private slots:
     void open_file();
     void image_reload();
     void image_unload();
-    void image_analyze();
+    void image_analyze_start();
     void image_analyze_stop();
 
     int output_log(void *p, const char *file, size_t line, QString str);

@@ -31,7 +31,7 @@ ImageViewer::ImageViewer(QWidget *parent) : QScrollArea(parent)
     installEventFilter(verticalScrollBar());
 }
 
-void ImageViewer::show_scale(void)
+void ImageViewer::show_scale()
 {
     scale_info->setText(QString("x%1").arg(scale(), 0, 'f', 1));
     scale_info->resize(scale_info->fontMetrics().size(0, scale_info->text()));
@@ -44,7 +44,7 @@ void ImageViewer::show_scale(void)
     show_scale_timer->start(2000);
 }
 
-void ImageViewer::remove_scale_by_timer(void)
+void ImageViewer::remove_scale_by_timer()
 {
     show_scale_timer->stop();
     scale_info->setText("");
@@ -62,12 +62,12 @@ void ImageViewer::set_pixmap(const QPixmap &pixmap)
     }
 }
 
-const QPixmap *ImageViewer::pixmap(void)
+const QPixmap *ImageViewer::pixmap()
 {
     return painter.pixmap();
 }
 
-const QPixmap *ImageViewer::origin_pixmap(void)
+const QPixmap *ImageViewer::origin_pixmap()
 {
     return &painter.origin_image;
 }
@@ -85,19 +85,25 @@ void ImageViewer::set_scale(double s)
     painter.set_scale(scale());
 }
 
-double ImageViewer::scale(void)
+double ImageViewer::scale()
 {
     return floor(image_scale_exact * 10.0 + 0.5) / 10.0;
 }
 
-bool ImageViewer::is_empty(void)
+bool ImageViewer::is_empty()
 {
     return painter.pixmap() == 0 || painter.pixmap()->isNull();
 }
 
-QPoint ImageViewer::mouse_pos(void)
+QPoint ImageViewer::mouse_pos()
 {
     return painter.mouse_pos;
+}
+
+void ImageViewer::clear_marks()
+{
+    painter.points.clear();
+    painter.lines.clear();
 }
 
 

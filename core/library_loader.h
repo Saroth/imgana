@@ -6,15 +6,19 @@
 class LibraryLoader
 {
 public:
+    LibraryLoader();
+    ~LibraryLoader();
+
     enum libana_err_t {
         LIBANA_ERR_LOAD_LIBRARY_FAILED      = -0x100,
         LIBANA_ERR_SYMBOL_IS_NOT_FOUND      = -0x101,
         LIBANA_ERR_LIBRARY_NOT_LOADED       = -0x102,
+        LIBANA_ERR_IMAGE_NOT_LOADED         = -0x103,
     };
-    LibraryLoader();
-
-    void set_debug(int (*f)(void *, const char *, size_t, const char *),
-            void *p);
+    void set_debug(func_analyzer_bio_debug f, void *p);
+    void set_mark_point(func_analyzer_bio_mark_point f, void *p);
+    void set_mark_line(func_analyzer_bio_mark_line f, void *p);
+    void set_image(const char *file_name);
 
     int load();
     int load(const char *filename);
@@ -71,11 +75,17 @@ private:
     const libana_functions *funcs;
     void *func_list[LIBANA_FUNC_MAX];
     void *handler;
+    unsigned char *image_data;
+    size_t image_data_size;
     analyzer_context context;
     bool flag_running;
 
-    int (*f_debug)(void *, const char *, size_t, const char *);
+    func_analyzer_bio_debug f_debug;
     void *p_debug;
+    func_analyzer_bio_mark_point f_mark_point;
+    void *p_mark_point;
+    func_analyzer_bio_mark_line f_mark_line;
+    void *p_mark_line;
 
     int sdb_out_info(const char *file, size_t line, const char *fmt, ...);
 

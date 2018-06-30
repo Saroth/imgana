@@ -40,6 +40,15 @@ LibraryLoader::LibraryLoader()
     f_debug = 0;
     memset(func_list, 0, sizeof(func_list));
     funcs = (const libana_functions *)func_list;
+    image_data = 0;
+    image_data_size = 0;
+}
+
+LibraryLoader::~LibraryLoader()
+{
+    delete []image_data;
+    image_data = 0;
+    image_data_size = 0;
 }
 
 int LibraryLoader::sdb_out_info(const char *file, size_t line,
@@ -62,11 +71,31 @@ int LibraryLoader::sdb_out_info(const char *file, size_t line,
 
 
 
-void LibraryLoader::set_debug(
-        int (*f)(void *, const char *, size_t, const char *), void *p)
+void LibraryLoader::set_debug(func_analyzer_bio_debug f, void *p)
 {
     f_debug = f;
     p_debug = p;
+}
+
+void LibraryLoader::set_mark_point(func_analyzer_bio_mark_point f, void *p)
+{
+    f_mark_point = f;
+    p_mark_point = p;
+}
+
+void LibraryLoader::set_mark_line(func_analyzer_bio_mark_line f, void *p)
+{
+    f_mark_line = f;
+    p_mark_line = p;
+}
+
+void LibraryLoader::set_image(const char *file_name)
+{
+    sdb_out_info(__FILE__, __LINE__, "load image: %s.", file_name);
+#warning "TODO: load image"
+    image_data_size = 1;
+    delete []image_data;
+    image_data = new unsigned char[image_data_size];
 }
 
 int LibraryLoader::load()
@@ -129,16 +158,20 @@ int LibraryLoader::run(int type)
         sdb_out_info(__FILE__, __LINE__, "library not loaded.");
         return LIBANA_ERR_LIBRARY_NOT_LOADED;
     }
+    if (!image_data) {
+        sdb_out_info(__FILE__, __LINE__, "image not loaded.");
+        return LIBANA_ERR_IMAGE_NOT_LOADED;
+    }
     flag_running = true;
     funcs->init(&context);
     funcs->set_memory_alloc(&context, 0, 0, 0);
     funcs->set_debug(&context, f_debug, p_debug);
-#warning "TODO: mark callback"
-    funcs->set_mark_point(&context, 0, 0);
-    funcs->set_mark_line(&context, 0, 0);
-#warning "TODO: import image"
-    funcs->import_bmp(&context, 0, 0);
+    funcs->set_mark_point(&context, f_mark_point, p_mark_point);
+    funcs->set_mark_line(&context, f_mark_line, p_mark_line);
+    funcs->import_bmp(&context, image_data, image_data_size);
+    sdb_out_info(__FILE__, __LINE__, ">> analyze start");
     int ret = funcs->start(&context, type);
+    sdb_out_info(__FILE__, __LINE__, "<< analyze finish");
     if (ret) {
         sdb_out_info(__FILE__, __LINE__, "analyze failed, return:%x.", ret);
     }

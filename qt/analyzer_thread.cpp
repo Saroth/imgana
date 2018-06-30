@@ -10,6 +10,8 @@ AnalyzerThread::AnalyzerThread(QObject *parent)
 {
     libana = new LibraryLoader();
     libana->set_debug(cb_output_log, this);
+    libana->set_mark_point(cb_output_mark_point, this);
+    libana->set_mark_line(cb_output_mark_line, this);
     task_id = thread_task_load;
 }
 
@@ -43,15 +45,22 @@ int AnalyzerThread::cb_output_log(void *p,
 int AnalyzerThread::cb_output_mark_point(void *p,
         size_t x, size_t y, size_t width, int r, int g, int b)
 {
-    return 0;
+    AnalyzerThread *th_ana = (AnalyzerThread *)p;
+    return emit th_ana->output_mark_point(p, x, y, width, r, g, b);
 }
 int AnalyzerThread::cb_output_mark_line(void *p,
         size_t x1, size_t y1, size_t x2, size_t y2, size_t width,
         int r, int g, int b)
 {
-    return 0;
+    AnalyzerThread *th_ana = (AnalyzerThread *)p;
+    return emit th_ana->output_mark_line(p, x1, y1, x2, y2, width, r, g, b);
 }
 
+
+void AnalyzerThread::set_image(const QString filename)
+{
+    libana->set_image(filename.toLatin1().data());
+}
 
 void AnalyzerThread::set_task(enum thread_task task)
 {
@@ -76,7 +85,8 @@ void AnalyzerThread::load_library()
         sdb_out_info(__FILE__, __LINE__, "analyzer is ready.");
     }
     else {
-        sdb_out_info(__FILE__, __LINE__, "load failed! return:%x", -ret);
+        sdb_out_info(__FILE__, __LINE__, "load failed! return:%d(%s%#x)",
+                ret, ret < 0 ? "-" : "", ret < 0 ? -ret : ret);
     }
 }
 
@@ -85,7 +95,7 @@ void AnalyzerThread::analyze_image()
     sdb_out_info(__FILE__, __LINE__, "run analyzer, mode:%d", 0);
     int ret = libana->run();
     sdb_out_info(__FILE__, __LINE__, "analyzer finished, return:%d(%s%#x)",
-            ret, ret > 0 ? "" : "-", ret > 0 ? ret : -ret);
+            ret, ret < 0 ? "-" : "", ret < 0 ? -ret : ret);
 }
 
 void AnalyzerThread::stop()

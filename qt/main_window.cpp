@@ -32,6 +32,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     libana_thread = new AnalyzerThread();
     connect(libana_thread, &AnalyzerThread::output_log,
             this, &MainWindow::output_log);
+    connect(libana_thread, &AnalyzerThread::output_mark_point,
+            this, &MainWindow::output_mark_point);
+    connect(libana_thread, &AnalyzerThread::output_mark_line,
+            this, &MainWindow::output_mark_line);
     connect(libana_thread, &AnalyzerThread::finished,
             this, &MainWindow::image_analyze_stop);
     load_analyzer();
@@ -160,13 +164,13 @@ void MainWindow::create_central(void)
     button_unload->setDisabled(true);
     button_analyze = new QPushButton("&Analyze");
     connect(button_analyze, &QPushButton::pressed,
-            this, &MainWindow::image_analyze);
+            this, &MainWindow::image_analyze_start);
     button_analyze->setDisabled(true);
     button_stop = new QPushButton("&Stop");
     connect(button_stop, &QPushButton::pressed,
             this, &MainWindow::image_analyze_stop);
     button_stop->setDisabled(true);
-    editor_file_path = new QLineEdit(QString(file_path + "01-1.jpg"));
+    editor_file_path = new QLineEdit(QString(file_path + "04-1.bmp"));
     editor_file_path->setPlaceholderText("path of image file.");
     editor_file_path->setTextMargins(0, 0, button_open->width(), 0);
     QLabel *label_file_path = new QLabel("&Path:");
@@ -226,6 +230,7 @@ void MainWindow::create_central(void)
     QWidget *central = new QWidget();
     central->setLayout(layout_top);
     setCentralWidget(central);
+    button_reload->setFocus();
 
     image_viewer.setMouseTracking(true);
     central->setMouseTracking(true);
@@ -256,6 +261,7 @@ void MainWindow::image_reload(void)
         return;
     }
     image_viewer.set_pixmap(QPixmap::fromImage(image));
+    libana_thread->set_image(file);
 
     button_unload->setEnabled(true);
     if (libana_thread->analyzer()->is_loaded()) {
@@ -273,11 +279,12 @@ void MainWindow::image_unload(void)
     update_state();
 }
 
-void MainWindow::image_analyze(void)
+void MainWindow::image_analyze_start(void)
 {
     if (libana_thread->isRunning()) {
         return;
     }
+    image_viewer.clear_marks();
     editor_file_path->setDisabled(true);
     button_open->setDisabled(true);
     button_reload->setDisabled(true);
@@ -286,9 +293,9 @@ void MainWindow::image_analyze(void)
     button_stop->setEnabled(true);
     ana_stat = analyze_state_running;
 
+    libana_thread->set_task(AnalyzerThread::thread_task_analyze);
     analyze_timer.reset();
     analyze_timer.start();
-    libana_thread->set_task(AnalyzerThread::thread_task_analyze);
     libana_thread->start();
     update_state();
 }
@@ -301,6 +308,7 @@ void MainWindow::image_analyze_stop(void)
         ana_stat = analyze_state_stopping;
     }
     else {
+        analyze_time = analyze_timer.stop();
         editor_file_path->setEnabled(true);
         button_open->setEnabled(true);
         button_reload->setEnabled(true);
@@ -314,7 +322,6 @@ void MainWindow::image_analyze_stop(void)
         else {
             ana_stat = analyze_state_finish;
         }
-        analyze_time = analyze_timer.stop();
     }
     update_state();
 }
@@ -403,6 +410,8 @@ int MainWindow::output_log(void *p, const char *file, size_t line, QString str)
 int MainWindow::output_mark_point(void *p,
         size_t x, size_t y, size_t width, int r, int g, int b)
 {
+    MarkPoint poi(x, y, QColor(r, g, b), width);
+    image_viewer.points()->append(poi);
     return 0;
 }
 
@@ -410,6 +419,8 @@ int MainWindow::output_mark_line(void *p,
         size_t x1, size_t y1, size_t x2, size_t y2, size_t width,
         int r, int g, int b)
 {
+    MarkLine lin(QLine(x1, y1, x2, y2), QColor(r, g, b), width);
+    image_viewer.lines()->append(lin);
     return 0;
 }
 
