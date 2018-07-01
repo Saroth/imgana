@@ -27,6 +27,7 @@ typedef struct {
     func_analyzer_bio_mark_line f_mark_line;
     void *p_mark_line;
 
+    void *p_lib;
     unsigned char flag_run;                     /* start/stop control */
     unsigned char flag_busy;                    /* is_running state */
 } analyzer_context;
