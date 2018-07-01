@@ -107,3 +107,31 @@ int analyzer_stop(analyzer_context *ctx)
 }
 
 
+
+extern unsigned int analyzer_version(void);
+extern const char *analyzer_version_str(void);
+
+const libana_functions funcs = {
+    .init               = analyzer_init,
+    .free               = analyzer_free,
+    .set_memory_alloc   = analyzer_set_memory_alloc,
+    .set_debug          = analyzer_set_debug,
+    .set_mark_point     = analyzer_set_mark_point,
+    .set_mark_line      = analyzer_set_mark_line,
+    .import_bmp         = analyzer_import_bmp,
+    .import_bitmap      = analyzer_import_bitmap,
+    .export_bitmap      = analyzer_export_bitmap,
+    .export_data        = analyzer_export_data,
+    .start              = analyzer_start,
+    .is_running         = analyzer_is_running,
+    .stop               = analyzer_stop,
+    .version            = analyzer_version,
+    .version_str        = analyzer_version_str,
+};
+
+const libana_functions *libana_ioctl(void)
+{
+    return &funcs;
+}
+
+

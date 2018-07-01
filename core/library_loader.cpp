@@ -10,39 +10,12 @@
 
 #include "library_loader.h"
 
-static const char *library_file = LIBRARY_FILE;
-static const char *func_name_list[] = {
-    "analyzer_init",
-    "analyzer_free",
-
-    "analyzer_set_memory_alloc",
-    "analyzer_set_debug",
-    "analyzer_set_mark_point",
-    "analyzer_set_mark_line",
-
-    "analyzer_import_bitmap",
-    "analyzer_import_bmp",
-    "analyzer_export_bitmap",
-    "analyzer_export_data",
-
-    "analyzer_start",
-    "analyzer_is_running",
-    "analyzer_stop",
-
-    "analyzer_version",
-    "analyzer_version_str",
-
-    0,
-};
-
-
 LibraryLoader::LibraryLoader()
 {
     flag_running = false;
     handler = 0;
     f_debug = 0;
-    memset(func_list, 0, sizeof(func_list));
-    funcs = (const libana_functions *)func_list;
+    funcs = 0;
     image_data = 0;
     image_data_size = 0;
 }
@@ -158,25 +131,24 @@ int LibraryLoader::set_image(const char *file_name)
 int LibraryLoader::load()
 {
     unload();
-    sdb_out_info(__FILE__, __LINE__, "loading library: %s.", library_file);
+    sdb_out_info(__FILE__, __LINE__, "loading library: %s.", LIBRARY_FILE);
     void *h;
-    if ((h = dlopen(library_file, RTLD_LAZY)) == 0) {
+    if ((h = dlopen(LIBRARY_FILE, RTLD_LAZY)) == 0) {
         sdb_out_info(__FILE__, __LINE__,
                 "library load failed: %s.", dlerror());
         return LIBANA_ERR_LOAD_LIBRARY_FAILED;
     }
 
-    unsigned int i = 0;
-    for (; i < LIBANA_FUNC_MAX; i++) {
-        func_list[i] = dlsym(h, func_name_list[i]);
-        char *err = dlerror();
-        if (err) {
-            sdb_out_info(__FILE__, __LINE__,
-                    "dlsym(%s) error: %s", func_name_list[i], err);
-            dlclose(h);
-            return LIBANA_ERR_SYMBOL_IS_NOT_FOUND;
-        }
+    func_libana_ioctl ioctl = (func_libana_ioctl)dlsym(h,
+            LIBANA_IOCTL_FUNC_NAME);
+    char *err = dlerror();
+    if (err) {
+        sdb_out_info(__FILE__, __LINE__,
+                "dlsym(%s) error: %s", LIBANA_IOCTL_FUNC_NAME, err);
+        dlclose(h);
+        return LIBANA_ERR_SYMBOL_IS_NOT_FOUND;
     }
+    funcs = ioctl();
     handler = h;
 
     sdb_out_info(__FILE__, __LINE__, "library version: %s", library_version());
@@ -188,7 +160,6 @@ void LibraryLoader::unload()
 {
     if (handler) {
         sdb_out_info(__FILE__, __LINE__, "close library.");
-        memset(func_list, 0, sizeof(func_list));
         dlclose(handler);
         handler = 0;
     }
