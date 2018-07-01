@@ -1,4 +1,5 @@
 #include <string.h>
+#include <unistd.h>
 
 #include "libanalyzer.h"
 
@@ -63,13 +64,42 @@ int analyzer_export_data(analyzer_context *ctx,
 }
 
 
+static int run_state = 0;
 int analyzer_start(analyzer_context *ctx, int type)
 {
+    run_state = 1;
+    if (ctx->f_debug) {
+        ctx->f_debug(ctx->p_debug, __FILE__, __LINE__, "demo debug.");
+    }
+    if (ctx->f_mark_point) {
+        if (ctx->f_debug) {
+            ctx->f_debug(ctx->p_debug, __FILE__, __LINE__, "set mark points.");
+        }
+        ctx->f_mark_point(ctx->p_mark_point, 1, 1, 3, 0, 0, 0);
+        sleep(1);
+        ctx->f_mark_point(ctx->p_mark_point, 1, 5, 3, 0xFF, 0, 0);
+        sleep(1);
+        ctx->f_mark_point(ctx->p_mark_point, 5, 5, 3, 0, 0xFF, 0);
+        sleep(1);
+        ctx->f_mark_point(ctx->p_mark_point, 5, 1, 3, 0, 0, 0xFF);
+        sleep(1);
+    }
+    if (ctx->f_mark_line) {
+        if (ctx->f_debug) {
+            ctx->f_debug(ctx->p_debug, __FILE__, __LINE__, "set mark lines.");
+        }
+        ctx->f_mark_line(ctx->p_mark_line, 2, 2, 4, 4, 1, 0xFF, 0xFF, 0xFF);
+        sleep(1);
+        ctx->f_mark_line(ctx->p_mark_line, 2, 4, 4, 2, 1, 0xFF, 0xFF, 0xFF);
+        sleep(1);
+    }
+    run_state = 0;
+    sleep(1);
     return 0;
 }
 int analyzer_is_running(analyzer_context *ctx)
 {
-    return 0;
+    return run_state;
 }
 int analyzer_stop(analyzer_context *ctx)
 {

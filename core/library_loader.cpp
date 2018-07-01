@@ -4,6 +4,9 @@
 #include <dlfcn.h>
 
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 #include "library_loader.h"
 
@@ -89,13 +92,67 @@ void LibraryLoader::set_mark_line(func_analyzer_bio_mark_line f, void *p)
     p_mark_line = p;
 }
 
-void LibraryLoader::set_image(const char *file_name)
+int LibraryLoader::set_image(const char *file_name)
 {
-    sdb_out_info(__FILE__, __LINE__, "load image: %s.", file_name);
-#warning "TODO: load image"
-    image_data_size = 1;
-    delete []image_data;
-    image_data = new unsigned char[image_data_size];
+    sdb_out_info(__FILE__, __LINE__, "load image file: %s.", file_name);
+    int err;
+    int fd = open(file_name, O_RDONLY);
+    if (fd < 0) {
+        err = errno;
+        sdb_out_info(__FILE__, __LINE__, "open failed, return: %d", fd);
+        sdb_out_info(__FILE__, __LINE__, "error info: [%d]%s",
+                err, strerror(err));
+        return LIBANA_ERR_OPEN_FAILED;
+    }
+    int ret;
+    do {
+        struct stat st;
+        if ((ret = fstat(fd, &st)) != 0) {
+            err = errno;
+            sdb_out_info(__FILE__, __LINE__, "fstat failed, return: %d", ret);
+            sdb_out_info(__FILE__, __LINE__, "error info: [%d]%s",
+                    err, strerror(err));
+            ret = LIBANA_ERR_FSTAT_FAILED;
+            break;
+        }
+        if (!S_ISREG(st.st_mode)) {
+            sdb_out_info(__FILE__, __LINE__, "not a regular file!");
+            ret = LIBANA_ERR_NOT_REGULAR_FILE;
+            break;
+        }
+        image_data_size = st.st_size;
+        sdb_out_info(__FILE__, __LINE__, "file size: %d", image_data_size);
+
+        delete []image_data;
+        image_data = new unsigned char[image_data_size + 4];
+        size_t count = 0;
+        while (image_data_size > count) {
+            ret = read(fd, &image_data[count], image_data_size - count);
+            if (ret < 0) {
+                err = errno;
+                sdb_out_info(__FILE__, __LINE__, "read failed, return: %d",
+                        ret);
+                sdb_out_info(__FILE__, __LINE__, "error info: [%d]%s",
+                        err, strerror(err));
+                ret = LIBANA_ERR_READ_FILE;
+                break;
+            }
+            else if (ret == 0) {
+                sdb_out_info(__FILE__, __LINE__,
+                        "reach the end-of-file(%d < %d), should never happen.",
+                        count, image_data_size);
+                ret = LIBANA_ERR_BAD_SIZE;
+                break;
+            }
+            count += ret;
+        }
+        if (ret < 0) {
+            break;
+        }
+    } while (0);
+    close(fd);
+
+    return ret;
 }
 
 int LibraryLoader::load()

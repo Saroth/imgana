@@ -57,9 +57,9 @@ int AnalyzerThread::cb_output_mark_line(void *p,
 }
 
 
-void AnalyzerThread::set_image(const QString filename)
+int AnalyzerThread::set_image(const QString filename)
 {
-    libana->set_image(filename.toLatin1().data());
+    return libana->set_image(filename.toLatin1().data());
 }
 
 void AnalyzerThread::set_task(enum thread_task task)

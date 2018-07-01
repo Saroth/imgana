@@ -182,7 +182,7 @@ void MainWindow::create_central(void)
     state_viewer->setFont(QFont(EDITOR_FONT, EDITOR_FONT_SIZE));
     state_viewer->setMinimumWidth(
             state_viewer->fontMetrics().width(QChar('x')) * 32);
-    state_viewer->setMaximumHeight(100);
+    state_viewer->setMaximumHeight(120);
     state_viewer->setReadOnly(true);
     log_viewer = new QTextEdit();
     QPalette log_pal;
@@ -256,12 +256,17 @@ void MainWindow::image_reload(void)
 {
     QString file = editor_file_path->text();
     if (image.load(file) == false) {
-        QString err = "Load failed.\nInvalid image file:" + file;
-        QMessageBox::warning(this, "Error", err);
+        QMessageBox::warning(this, "Error",
+                QString("load failed.\ninvalid image file: %1").arg(file));
         return;
     }
     image_viewer.set_pixmap(QPixmap::fromImage(image));
-    libana_thread->set_image(file);
+    int ret;
+    if ((ret = libana_thread->set_image(file)) < 0) {
+        QMessageBox::warning(this, "Error",
+                QString("read file failed.\nreturn -0x%1").arg(-ret, 0, 16));
+        return;
+    }
 
     button_unload->setEnabled(true);
     if (libana_thread->analyzer()->is_loaded()) {
@@ -371,6 +376,9 @@ void MainWindow::update_state(void)
                 .arg(state_info[ana_stat]));
         if (ana_stat == analyze_state_stopped
                 || ana_stat == analyze_state_finish) {
+            state_viewer->append(QString("marks:      point(x%1), line(x%2)")
+                    .arg(image_viewer.points()->size())
+                    .arg(image_viewer.lines()->size()));
             state_viewer->append(QString("time used:  %1.%2.%3.%4(ns)")
                     .arg(analyze_time.tv_sec)
                     .arg((analyze_time.tv_nsec / 1000000) % 1000,
@@ -412,6 +420,7 @@ int MainWindow::output_mark_point(void *p,
 {
     MarkPoint poi(x, y, QColor(r, g, b), width);
     image_viewer.points()->append(poi);
+    image_viewer.update();
     return 0;
 }
 
@@ -421,6 +430,7 @@ int MainWindow::output_mark_line(void *p,
 {
     MarkLine lin(QLine(x1, y1, x2, y2), QColor(r, g, b), width);
     image_viewer.lines()->append(lin);
+    image_viewer.update();
     return 0;
 }
 

@@ -81,6 +81,7 @@ void ImagePainter::paintEvent(QPaintEvent *evn)
             pai.drawLine(lin);
         }
         if (show_border) {
+            pai.setPen(QPen(QColor(0xFF, 0xFF, 0xFF), 1));
             pai.drawLine(pixel_border_top);
             pai.drawLine(pixel_border_bottom);
             pai.drawLine(pixel_border_left);

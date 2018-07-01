@@ -12,8 +12,8 @@ ImageViewer::ImageViewer(QWidget *parent) : QScrollArea(parent)
 {
     mouse_leftbtn_pressed = false;
     image_scale_exact = 1.0;
-    painter.set_text(DEFAULT_TEXT);
-    setWidget(&painter);
+    image_painter.set_text(DEFAULT_TEXT);
+    setWidget(&image_painter);
     setBackgroundRole(QPalette::Dark);
     setAlignment(Qt::AlignCenter);
 
@@ -26,7 +26,7 @@ ImageViewer::ImageViewer(QWidget *parent) : QScrollArea(parent)
             this, &ImageViewer::remove_scale_by_timer);
 
     installEventFilter(this);
-    installEventFilter(&painter);
+    installEventFilter(&image_painter);
     installEventFilter(horizontalScrollBar());
     installEventFilter(verticalScrollBar());
 }
@@ -52,9 +52,9 @@ void ImageViewer::remove_scale_by_timer()
 
 void ImageViewer::set_pixmap(const QPixmap &pixmap)
 {
-    painter.set_pixmap(pixmap);
+    image_painter.set_pixmap(pixmap);
     if (is_empty()) {
-        painter.set_text(DEFAULT_TEXT);
+        image_painter.set_text(DEFAULT_TEXT);
     }
     else {
         set_scale(1.0);
@@ -64,12 +64,12 @@ void ImageViewer::set_pixmap(const QPixmap &pixmap)
 
 const QPixmap *ImageViewer::pixmap()
 {
-    return painter.pixmap();
+    return image_painter.pixmap();
 }
 
 const QPixmap *ImageViewer::origin_pixmap()
 {
-    return &painter.origin_image;
+    return &image_painter.origin_image;
 }
 
 void ImageViewer::set_scale(double s)
@@ -82,7 +82,7 @@ void ImageViewer::set_scale(double s)
         image_scale_exact = SCALE_MAX;
     }
     show_scale();
-    painter.set_scale(scale());
+    image_painter.set_scale(scale());
 }
 
 double ImageViewer::scale()
@@ -92,25 +92,31 @@ double ImageViewer::scale()
 
 bool ImageViewer::is_empty()
 {
-    return painter.pixmap() == 0 || painter.pixmap()->isNull();
+    return image_painter.pixmap() == 0 || image_painter.pixmap()->isNull();
 }
 
 QPoint ImageViewer::mouse_pos()
 {
-    return painter.mouse_pos;
+    return image_painter.mouse_pos;
 }
 
 void ImageViewer::clear_marks()
 {
-    painter.points.clear();
-    painter.lines.clear();
+    image_painter.points.clear();
+    image_painter.lines.clear();
+}
+
+void ImageViewer::update()
+{
+    QWidget::update();
+    image_painter.update();
 }
 
 
 bool ImageViewer::eventFilter(QObject *obj, QEvent *evn)
 {
     if (evn->type() == QEvent::MouseButtonPress) {
-        if (obj == &painter) {
+        if (obj == &image_painter) {
             QMouseEvent *mos = (QMouseEvent *)evn;
             if (mos->buttons() & Qt::LeftButton) {
                 mouse_last_pos = mos->globalPos();
@@ -119,7 +125,7 @@ bool ImageViewer::eventFilter(QObject *obj, QEvent *evn)
         }
     }
     else if (evn->type() == QEvent::MouseMove) {
-        if (obj == &painter && mouse_leftbtn_pressed) {
+        if (obj == &image_painter && mouse_leftbtn_pressed) {
             QPoint mouse_pos_new = ((QMouseEvent *)evn)->globalPos();
             int ofs_x = mouse_pos_new.x() - mouse_last_pos.x();
             int ofs_y = mouse_pos_new.y() - mouse_last_pos.y();
@@ -157,9 +163,9 @@ bool ImageViewer::eventFilter(QObject *obj, QEvent *evn)
             image_scale_exact += (whl->delta() / 120.0 / 40.0)
                 * image_scale_exact;
 
-            QSize size_old = painter.pixmap()->size();
+            QSize size_old = image_painter.pixmap()->size();
             set_scale(image_scale_exact);
-            QSize size = painter.size();
+            QSize size = image_painter.size();
 
             QScrollBar *sclbar = horizontalScrollBar();
             if (sclbar->maximum() < size.width()) { /* 修复缩小时跳动 */

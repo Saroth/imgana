@@ -18,7 +18,7 @@ public:
     ~AnalyzerThread();
 
     LibraryLoader *analyzer();
-    void set_image(const QString filename);
+    int set_image(const QString filename);
     void set_task(enum thread_task task);
     AnalyzerThread::thread_task task();
     void stop();

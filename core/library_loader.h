@@ -14,11 +14,16 @@ public:
         LIBANA_ERR_SYMBOL_IS_NOT_FOUND      = -0x101,
         LIBANA_ERR_LIBRARY_NOT_LOADED       = -0x102,
         LIBANA_ERR_IMAGE_NOT_LOADED         = -0x103,
+        LIBANA_ERR_OPEN_FAILED              = -0x104,
+        LIBANA_ERR_FSTAT_FAILED             = -0x105,
+        LIBANA_ERR_NOT_REGULAR_FILE         = -0x106,
+        LIBANA_ERR_READ_FILE                = -0x107,
+        LIBANA_ERR_BAD_SIZE                 = -0x108,
     };
     void set_debug(func_analyzer_bio_debug f, void *p);
     void set_mark_point(func_analyzer_bio_mark_point f, void *p);
     void set_mark_line(func_analyzer_bio_mark_line f, void *p);
-    void set_image(const char *file_name);
+    int set_image(const char *file_name);
 
     int load();
     int load(const char *filename);

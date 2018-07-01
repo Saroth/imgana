@@ -100,15 +100,16 @@ public:
     bool is_empty();
     QPoint mouse_pos();
     void clear_marks();
+    void update();
 
-    QVector<MarkPoint> *points() { return &painter.points; }
-    QVector<MarkLine> *lines() { return &painter.lines; }
+    QVector<MarkPoint> *points() { return &image_painter.points; }
+    QVector<MarkLine> *lines() { return &image_painter.lines; }
 
 protected:
     bool eventFilter(QObject *obj, QEvent *evn);
 
 private:
-    ImagePainter painter;
+    ImagePainter image_painter;
     bool mouse_leftbtn_pressed;
     QPoint mouse_last_pos;
     double image_scale_exact;

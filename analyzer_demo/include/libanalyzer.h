@@ -47,7 +47,8 @@ void analyzer_set_mark_line(analyzer_context *ctx,
 int analyzer_import_bitmap(analyzer_context *ctx,
         const unsigned char *data, size_t size, size_t bits_per_pixel,
         size_t w, size_t h);
-int analyzer_import_bmp(analyzer_context *ctx, const char *bmp, size_t size);
+int analyzer_import_bmp(analyzer_context *ctx,
+        const unsigned char *bmp, size_t size);
 int analyzer_export_bitmap(analyzer_context *ctx,
         unsigned char *buf, size_t size, size_t *w, size_t *h, size_t *len);
 int analyzer_export_data(analyzer_context *ctx,
