@@ -10,15 +10,15 @@ public:
     ~LibraryLoader();
 
     enum libana_err_t {
-        LIBANA_ERR_LOAD_LIBRARY_FAILED      = -0x100,
-        LIBANA_ERR_SYMBOL_IS_NOT_FOUND      = -0x101,
-        LIBANA_ERR_LIBRARY_NOT_LOADED       = -0x102,
-        LIBANA_ERR_IMAGE_NOT_LOADED         = -0x103,
-        LIBANA_ERR_OPEN_FAILED              = -0x104,
-        LIBANA_ERR_FSTAT_FAILED             = -0x105,
-        LIBANA_ERR_NOT_REGULAR_FILE         = -0x106,
-        LIBANA_ERR_READ_FILE                = -0x107,
-        LIBANA_ERR_BAD_SIZE                 = -0x108,
+        LIBANA_ERR_LOAD_LIBRARY_FAILED      = -0x200,
+        LIBANA_ERR_SYMBOL_IS_NOT_FOUND      = -0x201,
+        LIBANA_ERR_LIBRARY_NOT_LOADED       = -0x202,
+        LIBANA_ERR_IMAGE_NOT_LOADED         = -0x203,
+        LIBANA_ERR_OPEN_FAILED              = -0x204,
+        LIBANA_ERR_FSTAT_FAILED             = -0x205,
+        LIBANA_ERR_NOT_REGULAR_FILE         = -0x206,
+        LIBANA_ERR_READ_FILE                = -0x207,
+        LIBANA_ERR_BAD_SIZE                 = -0x208,
     };
     void set_debug(func_analyzer_bio_debug f, void *p);
     void set_mark_point(func_analyzer_bio_mark_point f, void *p);
