@@ -10,7 +10,7 @@
 
 #include "library_loader.h"
 
-static const char *library_file = "libanalyzer_demo.so";
+static const char *library_file = LIBRARY_FILE;
 static const char *func_name_list[] = {
     "analyzer_init",
     "analyzer_free",
