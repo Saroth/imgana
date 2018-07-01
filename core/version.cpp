@@ -9,7 +9,7 @@
  *      II: minor version
  *      PP: patch
  */
-#define IMGANA_VERSION  0x00000001
+#define IMGANA_VERSION  0x00000100
 
 static char version_string[32];
 
