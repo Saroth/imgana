@@ -8,6 +8,8 @@
 #include <QMouseEvent>
 #include <QFont>
 
+#include <stdio.h>
+
 #include "main_window.h"
 #include "version.h"
 
@@ -407,11 +409,17 @@ int MainWindow::output_log(void *p, const char *file, size_t line, QString str)
                         3, 10, QLatin1Char('0')));
         }
         // s.append(QString("%1:").arg((size_t)p, 0, 16));
-        s.append(QString("%1:").arg(file, 20));
+        s.append(QString("%1:").arg(QString(file), 20));
         s.append(QString("%1  ").arg(line, 4, 10, QLatin1Char('0')));
     }
-    s.append(str);
-    log_viewer->append(s);
+    log_viewer->moveCursor(QTextCursor::End);
+    log_viewer->insertPlainText(s);
+    // log_viewer->insertHtml(str);
+    log_viewer->insertPlainText(str);
+    log_viewer->insertHtml(QString("<br>"));
+
+    printf("%20s:%04ld  %s\n", file, line, str.toLatin1().data());
+
     return 0;
 }
 

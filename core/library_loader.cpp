@@ -179,6 +179,15 @@ const char *LibraryLoader::library_version(void)
 }
 
 
+void *LibraryLoader::cb_alloc(void *p, size_t size)
+{
+    unsigned char *addr = new unsigned char[size];
+    return addr;
+}
+void LibraryLoader::cb_free(void *p, void *addr)
+{
+    delete [](unsigned char *)addr;
+}
 
 int LibraryLoader::run(int type)
 {
@@ -192,21 +201,18 @@ int LibraryLoader::run(int type)
     }
     flag_running = true;
     funcs->init(&context);
-    funcs->set_memory_alloc(&context, 0, 0, 0);
+    funcs->set_memory_alloc(&context, cb_alloc, cb_free, this);
     funcs->set_debug(&context, f_debug, p_debug);
     funcs->set_mark_point(&context, f_mark_point, p_mark_point);
     funcs->set_mark_line(&context, f_mark_line, p_mark_line);
     funcs->import_bmp(&context, image_data, image_data_size);
-    sdb_out_info(__FILE__, __LINE__, ">> analyze start");
+    sdb_out_info(__FILE__, __LINE__, ">>>> analyze start");
     int ret = funcs->start(&context, type);
-    sdb_out_info(__FILE__, __LINE__, "<< analyze finish");
-    if (ret) {
-        sdb_out_info(__FILE__, __LINE__, "analyze failed, return:%x.", ret);
-    }
+    sdb_out_info(__FILE__, __LINE__, "<<<< analyze finish");
     funcs->free(&context);
     flag_running = false;
 
-    return 0;
+    return ret;
 }
 
 bool LibraryLoader::is_running()

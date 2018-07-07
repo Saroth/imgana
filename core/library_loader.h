@@ -44,6 +44,8 @@ private:
     analyzer_context context;
     bool flag_running;
 
+    static void *cb_alloc(void *p, size_t size);
+    static void cb_free(void *p, void *addr);
     func_analyzer_bio_debug f_debug;
     void *p_debug;
     func_analyzer_bio_mark_point f_mark_point;
