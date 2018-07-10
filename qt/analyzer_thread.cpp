@@ -9,7 +9,7 @@ AnalyzerThread::AnalyzerThread(QObject *parent)
     : QThread(parent)
 {
     libana = new LibraryLoader();
-    libana->set_debug(cb_output_log, this);
+    libana->set_debug(cb_output_log, 0, this);
     libana->set_mark_point(cb_output_mark_point, this);
     libana->set_mark_line(cb_output_mark_line, this);
     task_id = thread_task_load;

@@ -14,7 +14,8 @@ LibraryLoader::LibraryLoader()
 {
     flag_running = false;
     handler = 0;
-    f_debug = 0;
+    f_output = 0;
+    f_input = 0;
     funcs = 0;
     image_data = 0;
     image_data_size = 0;
@@ -38,8 +39,8 @@ int LibraryLoader::sdb_out_info(const char *file, size_t line,
 
     file = strrchr(file, '\\') ? (strrchr(file, '\\') + 1) :
         strrchr(file, '/') ? (strrchr(file, '/') + 1) : file;
-    if (f_debug) {
-        return f_debug(p_debug, file, line, buf);
+    if (f_output) {
+        return f_output(p_debug, file, line, buf);
     }
 
     return printf("%20s:%04ld  %s\n", file, line, buf);
@@ -47,9 +48,11 @@ int LibraryLoader::sdb_out_info(const char *file, size_t line,
 
 
 
-void LibraryLoader::set_debug(func_analyzer_bio_debug f, void *p)
+void LibraryLoader::set_debug(func_analyzer_bio_output f_out,
+        func_analyzer_bio_input f_in, void *p)
 {
-    f_debug = f;
+    f_output = f_out;
+    f_input = f_in;
     p_debug = p;
 }
 
@@ -150,8 +153,18 @@ int LibraryLoader::load()
     }
     funcs = ioctl();
     handler = h;
-
     sdb_out_info(__FILE__, __LINE__, "library version: %s", library_version());
+
+    int ret;
+    funcs->set_memory_alloc(cb_alloc, cb_free, this);
+    funcs->set_debug(f_output, f_input, p_debug);
+    funcs->set_mark_point(f_mark_point, p_mark_point);
+    funcs->set_mark_line(f_mark_line, p_mark_line);
+    if ((ret = funcs->init(&context)) < 0) {
+        sdb_out_info(__FILE__, __LINE__,
+                "library init failed, return:%#x.", -ret);
+        return ret;
+    }
     sdb_out_info(__FILE__, __LINE__, "load successfully.");
     return 0;
 }
@@ -159,6 +172,7 @@ int LibraryLoader::load()
 void LibraryLoader::unload()
 {
     if (handler) {
+        funcs->free(context);
         sdb_out_info(__FILE__, __LINE__, "close library.");
         dlclose(handler);
         handler = 0;
@@ -200,16 +214,11 @@ int LibraryLoader::run(int type)
         return LIBANA_ERR_IMAGE_NOT_LOADED;
     }
     flag_running = true;
-    funcs->init(&context);
-    funcs->set_memory_alloc(&context, cb_alloc, cb_free, this);
-    funcs->set_debug(&context, f_debug, p_debug);
-    funcs->set_mark_point(&context, f_mark_point, p_mark_point);
-    funcs->set_mark_line(&context, f_mark_line, p_mark_line);
-    funcs->import_bmp(&context, image_data, image_data_size);
+    sdb_out_info(__FILE__, __LINE__, "==== import image");
+    funcs->import_bmp(context, image_data, image_data_size);
     sdb_out_info(__FILE__, __LINE__, ">>>> analyze start");
-    int ret = funcs->start(&context, type);
+    int ret = funcs->start(context, type);
     sdb_out_info(__FILE__, __LINE__, "<<<< analyze finish");
-    funcs->free(&context);
     flag_running = false;
 
     return ret;
@@ -227,7 +236,7 @@ void LibraryLoader::stop()
         return;
     }
     sdb_out_info(__FILE__, __LINE__, "stop analyzer.");
-    funcs->stop(&context);
+    funcs->stop(context);
 }
 
 bool LibraryLoader::is_busy()
@@ -236,7 +245,7 @@ bool LibraryLoader::is_busy()
         sdb_out_info(__FILE__, __LINE__, "library not loaded.");
         return false;
     }
-    return funcs->is_running(&context) ? true : false;
+    return funcs->is_running(context) ? true : false;
 }
 
 

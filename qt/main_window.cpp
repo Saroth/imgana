@@ -301,6 +301,7 @@ void MainWindow::image_analyze_start(void)
     ana_stat = analyze_state_running;
 
     libana_thread->set_task(AnalyzerThread::thread_task_analyze);
+    analyze_time = { 0, 0, };
     analyze_timer.reset();
     analyze_timer.start();
     libana_thread->start();

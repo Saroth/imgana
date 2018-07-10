@@ -112,12 +112,12 @@ extern unsigned int analyzer_version(void);
 extern const char *analyzer_version_str(void);
 
 const libana_functions funcs = {
-    .init               = analyzer_init,
-    .free               = analyzer_free,
     .set_memory_alloc   = analyzer_set_memory_alloc,
     .set_debug          = analyzer_set_debug,
     .set_mark_point     = analyzer_set_mark_point,
     .set_mark_line      = analyzer_set_mark_line,
+    .init               = analyzer_init,
+    .free               = analyzer_free,
     .import_bmp         = analyzer_import_bmp,
     .import_bitmap      = analyzer_import_bitmap,
     .export_bitmap      = analyzer_export_bitmap,

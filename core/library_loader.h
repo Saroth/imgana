@@ -20,7 +20,8 @@ public:
         LIBANA_ERR_READ_FILE                = -0x207,
         LIBANA_ERR_BAD_SIZE                 = -0x208,
     };
-    void set_debug(func_analyzer_bio_debug f, void *p);
+    void set_debug(func_analyzer_bio_output f_out,
+            func_analyzer_bio_input f_in, void *p);
     void set_mark_point(func_analyzer_bio_mark_point f, void *p);
     void set_mark_line(func_analyzer_bio_mark_line f, void *p);
     int set_image(const char *file_name);
@@ -46,7 +47,8 @@ private:
 
     static void *cb_alloc(void *p, size_t size);
     static void cb_free(void *p, void *addr);
-    func_analyzer_bio_debug f_debug;
+    func_analyzer_bio_output f_output;
+    func_analyzer_bio_input f_input;
     void *p_debug;
     func_analyzer_bio_mark_point f_mark_point;
     void *p_mark_point;
