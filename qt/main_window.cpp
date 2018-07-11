@@ -8,12 +8,10 @@
 #include <QMouseEvent>
 #include <QFont>
 
-#include <stdio.h>
-
 #include "main_window.h"
 #include "version.h"
 
-#define WINDOW_WIDTH_DEF    1200
+#define WINDOW_WIDTH_DEF    800
 #define WINDOW_HEIGHT_DEF   640
 #define EDITOR_FONT         "Monospace"
 #define EDITOR_FONT_SIZE    8
@@ -32,19 +30,24 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     qRegisterMetaType<size_t>("size_t");
     qRegisterMetaType<QTextCursor>("QTextCursor");
     libana_thread = new AnalyzerThread();
-    connect(libana_thread, &AnalyzerThread::output_log,
-            this, &MainWindow::output_log);
     connect(libana_thread, &AnalyzerThread::output_mark_point,
             this, &MainWindow::output_mark_point);
     connect(libana_thread, &AnalyzerThread::output_mark_line,
             this, &MainWindow::output_mark_line);
     connect(libana_thread, &AnalyzerThread::finished,
             this, &MainWindow::image_analyze_stop);
+
+    log_watcher = new QFileSystemWatcher();
+    log_watcher->addPath(libana_thread->analyzer()->log_file());
+    connect(log_watcher, &QFileSystemWatcher::fileChanged,
+            this, &MainWindow::log_update);
+    log_file = new QFile(QString(libana_thread->analyzer()->log_file()));
+
     load_analyzer();
 }
 
 
-void MainWindow::create_menu_bar(void)
+void MainWindow::create_menu_bar()
 {
     menu_bar = menuBar();
 
@@ -59,8 +62,10 @@ void MainWindow::create_menu_bar(void)
     connect(exit, &QAction::triggered, this, &MainWindow::close);
 
     QMenu *window = menu_bar->addMenu("&Window");
-    QAction *log_toggle = window->addAction("&Log toggle");
+    QAction *log_toggle = window->addAction("Log &toggle");
     connect(log_toggle, &QAction::triggered, this, &MainWindow::log_toggle);
+    QAction *log_clear = window->addAction("Log &clear");
+    connect(log_clear, &QAction::triggered, this, &MainWindow::log_clear);
     QAction *reset_size = window->addAction("&Reset size");
     connect(reset_size, &QAction::triggered, this, &MainWindow::reset_size);
 
@@ -71,7 +76,7 @@ void MainWindow::create_menu_bar(void)
     connect(about_qt, &QAction::triggered, this, &MainWindow::about_qt);
 }
 
-void MainWindow::load_analyzer(void)
+void MainWindow::load_analyzer()
 {
     if (libana_thread->isRunning()) {
         log_viewer->append("thread is running, abort");
@@ -81,7 +86,7 @@ void MainWindow::load_analyzer(void)
     libana_thread->start();
 }
 
-void MainWindow::unload_analyzer(void)
+void MainWindow::unload_analyzer()
 {
     if (libana_thread->isRunning()) {
         log_viewer->append("thread is running, abort");
@@ -91,7 +96,7 @@ void MainWindow::unload_analyzer(void)
     button_analyze->setDisabled(true);
 }
 
-void MainWindow::log_toggle(void)
+void MainWindow::log_toggle()
 {
     if (log_viewer->isHidden()) {
         log_viewer->show();
@@ -101,12 +106,17 @@ void MainWindow::log_toggle(void)
     }
 }
 
-void MainWindow::reset_size(void)
+void MainWindow::log_clear()
+{
+    log_viewer->clear();
+}
+
+void MainWindow::reset_size()
 {
     resize(WINDOW_WIDTH_DEF, WINDOW_HEIGHT_DEF);
 }
 
-void MainWindow::about(void)
+void MainWindow::about()
 {
     QString msg;
     msg.append("Image Analyzer\n");
@@ -119,12 +129,12 @@ void MainWindow::about(void)
     QMessageBox::about(this, "About", msg);
 }
 
-void MainWindow::about_qt(void)
+void MainWindow::about_qt()
 {
     QMessageBox::aboutQt(this);
 }
 
-void MainWindow::create_status_bar(void)
+void MainWindow::create_status_bar()
 {
     status_bar = statusBar();
 
@@ -136,7 +146,7 @@ void MainWindow::create_status_bar(void)
     connect(timer, &QTimer::timeout, this, &MainWindow::status_bar_update_time);
 }
 
-void MainWindow::status_bar_update_time(void)
+void MainWindow::status_bar_update_time()
 {
     QString time = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
     status_bar_time->setText(time);
@@ -149,7 +159,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 }
 
 
-void MainWindow::create_central(void)
+void MainWindow::create_central()
 {
     file_path = "./images/";
 
@@ -240,7 +250,7 @@ void MainWindow::create_central(void)
     update_state();
 }
 
-void MainWindow::open_file(void)
+void MainWindow::open_file()
 {
     QString file = QFileDialog::getOpenFileName(this, "open image file",
             file_path, "Image files(*)");
@@ -254,7 +264,7 @@ void MainWindow::open_file(void)
     image_reload();
 }
 
-void MainWindow::image_reload(void)
+void MainWindow::image_reload()
 {
     QString file = editor_file_path->text();
     if (image.load(file) == false) {
@@ -278,7 +288,7 @@ void MainWindow::image_reload(void)
     update_state();
 }
 
-void MainWindow::image_unload(void)
+void MainWindow::image_unload()
 {
     image_viewer.set_pixmap(QPixmap(""));
     button_unload->setDisabled(true);
@@ -286,7 +296,7 @@ void MainWindow::image_unload(void)
     update_state();
 }
 
-void MainWindow::image_analyze_start(void)
+void MainWindow::image_analyze_start()
 {
     if (libana_thread->isRunning()) {
         return;
@@ -308,7 +318,7 @@ void MainWindow::image_analyze_start(void)
     update_state();
 }
 
-void MainWindow::image_analyze_stop(void)
+void MainWindow::image_analyze_stop()
 {
     button_stop->setDisabled(true);
     if (libana_thread->isRunning()) {
@@ -345,7 +355,7 @@ void MainWindow::wheelEvent(QWheelEvent *evn)
     update_state();
 }
 
-void MainWindow::update_state(void)
+void MainWindow::update_state()
 {
     state_viewer->clear();
     if (image_viewer.is_empty()) {
@@ -395,31 +405,32 @@ void MainWindow::update_state(void)
 }
 
 
-int MainWindow::output_log(void *p, const char *file, size_t line, QString str)
+int MainWindow::log_update()
 {
-    QString s;
-    if (file) {
-        if (analyze_timer.is_running()) {
-            analyze_time = analyze_timer.time();
-            s.append(QString("%1.%2.%3.%4 ").arg(analyze_time.tv_sec)
-                    .arg((analyze_time.tv_nsec / 1000000) % 1000,
-                        3, 10, QLatin1Char('0'))
-                    .arg((analyze_time.tv_nsec / 1000) % 1000,
-                        3, 10, QLatin1Char('0'))
-                    .arg(analyze_time.tv_nsec % 1000,
-                        3, 10, QLatin1Char('0')));
+    if (!QFile::exists(QString(libana_thread->analyzer()->log_file()))) {
+        log_viewer->append("<font color='#FF8080'>#### "
+                "file not exists ####</font><br>");
+        if (log_file->isOpen()) {
+            log_file->close();
+            log_viewer->append("<font color='#80FF80'>#### "
+                    "close log file ####</font><br>");
         }
-        // s.append(QString("%1:").arg((size_t)p, 0, 16));
-        s.append(QString("%1:").arg(QString(file), 20));
-        s.append(QString("%1  ").arg(line, 4, 10, QLatin1Char('0')));
+        return 0;
+    }
+    if (!log_file->isOpen()) {
+        if (!log_file->open(QIODevice::ReadOnly | QIODevice::Append
+                | QIODevice::Text)) {
+            log_viewer->append("<font color='#FF8080'>#### "
+                    "open file failed ####</font><br>");
+        }
+        log_viewer->append("<font color='#80FF80'>#### "
+                "log file opened ####</font><br>");
     }
     log_viewer->moveCursor(QTextCursor::End);
-    log_viewer->insertPlainText(s);
-    // log_viewer->insertHtml(str);
-    log_viewer->insertPlainText(str);
-    log_viewer->insertHtml(QString("<br>"));
-
-    printf("%20s:%04ld  %s\n", file, line, str.toLatin1().data());
+    while (!log_file->atEnd()) {
+        log_viewer->insertPlainText(log_file->readLine());
+    }
+    log_viewer->moveCursor(QTextCursor::End);
 
     return 0;
 }

@@ -9,7 +9,6 @@ AnalyzerThread::AnalyzerThread(QObject *parent)
     : QThread(parent)
 {
     libana = new LibraryLoader();
-    libana->set_debug(cb_output_log, 0, this);
     libana->set_mark_point(cb_output_mark_point, this);
     libana->set_mark_line(cb_output_mark_line, this);
     task_id = thread_task_load;
@@ -22,7 +21,7 @@ AnalyzerThread::~AnalyzerThread()
 }
 
 
-int AnalyzerThread::sdb_out_info(const char *file, size_t line,
+int AnalyzerThread::log_output(const char *file, size_t line,
         const char *fmt, ...)
 {
     char buf[1024];
@@ -30,18 +29,9 @@ int AnalyzerThread::sdb_out_info(const char *file, size_t line,
     va_start(va, fmt);
     vsnprintf(buf, sizeof(buf), fmt, va);
     va_end(va);
-
-    file = strrchr(file, '\\') ? (strrchr(file, '\\') + 1) :
-        strrchr(file, '/') ? (strrchr(file, '/') + 1) : file;
-    return emit output_log(this, file, line, QString(buf));
+    return libana->log_output(file, line, buf);
 }
 
-int AnalyzerThread::cb_output_log(void *p,
-        const char *file, size_t line, const char *str)
-{
-    AnalyzerThread *th_ana = (AnalyzerThread *)p;
-    return th_ana->sdb_out_info(file, line, str);
-}
 int AnalyzerThread::cb_output_mark_point(void *p,
         size_t x, size_t y, size_t width, int r, int g, int b)
 {
@@ -79,22 +69,22 @@ LibraryLoader *AnalyzerThread::analyzer()
 
 void AnalyzerThread::load_library()
 {
-    sdb_out_info(__FILE__, __LINE__, "load analyzer library...");
+    log_output(__FILE__, __LINE__, "load analyzer library...");
     int ret = libana->load();
     if (ret == 0 && libana->is_loaded()) {
-        sdb_out_info(__FILE__, __LINE__, "analyzer is ready.");
+        log_output(__FILE__, __LINE__, "analyzer is ready.");
     }
     else {
-        sdb_out_info(__FILE__, __LINE__, "load failed! return:%d(%s%#x)",
+        log_output(__FILE__, __LINE__, "load failed! return:%d(%s%#x)",
                 ret, ret < 0 ? "-" : "", ret < 0 ? -ret : ret);
     }
 }
 
 void AnalyzerThread::analyze_image()
 {
-    sdb_out_info(__FILE__, __LINE__, "run analyzer, mode:%d", 0);
+    log_output(__FILE__, __LINE__, "run analyzer, mode:%d", 0);
     int ret = libana->run();
-    sdb_out_info(__FILE__, __LINE__, "analyzer finished, return:%d(%s%#x)",
+    log_output(__FILE__, __LINE__, "analyzer finished, return:%d(%s%#x)",
             ret, ret < 0 ? "-" : "", ret < 0 ? -ret : ret);
 }
 
@@ -112,7 +102,7 @@ void AnalyzerThread::run()
         analyze_image();
     }
     else {
-        sdb_out_info(__FILE__, __LINE__, "unknown task id: %d", task_id);
+        log_output(__FILE__, __LINE__, "unknown task id: %d", task_id);
     }
 }
 

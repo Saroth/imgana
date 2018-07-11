@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QDesktopWidget *d = QApplication::desktop();
 
     MainWindow mw;
-    mw.move((d->width() - mw.width()) / 2, (d->height() - mw.height()) / 2);
+    mw.move((d->width() - mw.width()) / 3, (d->height() - mw.height()) / 2);
     mw.show();
     return a.exec();
 }

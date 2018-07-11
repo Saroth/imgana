@@ -9,6 +9,8 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QImage>
+#include <QFileSystemWatcher>
+#include <QFile>
 
 #include "image_viewer.h"
 #include "analyzer_thread.h"
@@ -55,6 +57,8 @@ private:
     QPushButton *button_unload;
     QPushButton *button_analyze;
     QPushButton *button_stop;
+    QFileSystemWatcher *log_watcher;
+    QFile *log_file;
 
     void create_menu_bar();
     void create_status_bar();
@@ -64,6 +68,7 @@ private slots:
     void load_analyzer();
     void unload_analyzer();
     void log_toggle();
+    void log_clear();
     void reset_size();
     void about();
     void about_qt();
@@ -74,7 +79,7 @@ private slots:
     void image_analyze_start();
     void image_analyze_stop();
 
-    int output_log(void *p, const char *file, size_t line, QString str);
+    int log_update();
     int output_mark_point(void *p,
             size_t x, size_t y, size_t width, int r, int g, int b);
     int output_mark_line(void *p,

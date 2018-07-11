@@ -20,8 +20,6 @@ public:
         LIBANA_ERR_READ_FILE                = -0x207,
         LIBANA_ERR_BAD_SIZE                 = -0x208,
     };
-    void set_debug(func_analyzer_bio_output f_out,
-            func_analyzer_bio_input f_in, void *p);
     void set_mark_point(func_analyzer_bio_mark_point f, void *p);
     void set_mark_line(func_analyzer_bio_mark_line f, void *p);
     int set_image(const char *file_name);
@@ -37,6 +35,9 @@ public:
     void stop();
     bool is_busy();
 
+    int log_output(const char *file, size_t line, const char *fmt, ...);
+    const char *log_file();
+
 private:
     const libana_functions *funcs;
     void *handler;
@@ -44,18 +45,16 @@ private:
     size_t image_data_size;
     analyzer_context context;
     bool flag_running;
+    int log_fd;
 
     static void *cb_alloc(void *p, size_t size);
     static void cb_free(void *p, void *addr);
-    func_analyzer_bio_output f_output;
-    func_analyzer_bio_input f_input;
-    void *p_debug;
+    static int cb_output(void *p, const char *file, size_t line,
+            const char *str);
     func_analyzer_bio_mark_point f_mark_point;
     void *p_mark_point;
     func_analyzer_bio_mark_line f_mark_line;
     void *p_mark_line;
-
-    int sdb_out_info(const char *file, size_t line, const char *fmt, ...);
 
 };
 

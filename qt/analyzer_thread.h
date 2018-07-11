@@ -33,13 +33,11 @@ private:
     void load_library();
     void analyze_image();
 
-    int sdb_out_info(const char *file, size_t line, const char *fmt, ...);
+    int log_output(const char *file, size_t line, const char *fmt, ...);
     int sdb_out_mark_point(size_t x, size_t y,
             size_t width, int r, int g, int b);
     int sdb_out_mark_line(size_t x1, size_t y1, size_t x2, size_t y2,
             size_t width, int r, int g, int b);
-    static int cb_output_log(void *p,
-            const char *file, size_t line, const char *str);
     static int cb_output_mark_point(void *p,
             size_t x, size_t y, size_t width, int r, int g, int b);
     static int cb_output_mark_line(void *p,
@@ -47,7 +45,6 @@ private:
             int r, int g, int b);
 
 signals:
-    int output_log(void *p, const char *file, size_t line, QString str);
     int output_mark_point(void *p,
             size_t x, size_t y, size_t width, int r, int g, int b);
     int output_mark_line(void *p,
