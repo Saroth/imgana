@@ -58,6 +58,9 @@ void MainWindow::create_menu_bar()
     QAction *unload_library = file->addAction("&Unload library");
     connect(unload_library, &QAction::triggered,
             this, &MainWindow::unload_analyzer);
+    QAction *truncate_log_file = file->addAction("&Truncate log file");
+    connect(truncate_log_file, &QAction::triggered,
+            this, &MainWindow::truncate_log_file);
     QAction *exit = file->addAction("E&xit");
     connect(exit, &QAction::triggered, this, &MainWindow::close);
 
@@ -109,6 +112,29 @@ void MainWindow::log_toggle()
 void MainWindow::log_clear()
 {
     log_viewer->clear();
+}
+
+void MainWindow::truncate_log_file()
+{
+    if (!QFile::exists(QString(libana_thread->analyzer()->log_file()))) {
+        log_viewer->append("<font color='#FF8080'>#### "
+                "file not exists ####</font><br>");
+    }
+    else if (log_file->isOpen()) {
+        log_file->close();
+    }
+    if (!log_file->open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        log_viewer->append("<font color='#FF8080'>#### "
+                "open file failed ####</font><br>");
+    }
+    log_file->close();
+    if (!log_file->open(QIODevice::ReadOnly | QIODevice::Append
+                | QIODevice::Text)) {
+        log_viewer->append("<font color='#FF8080'>#### "
+                "open file failed ####</font><br>");
+    }
+    log_viewer->append("<font color='#80FF80'>#### "
+            "log file has truncated ####</font><br>");
 }
 
 void MainWindow::reset_size()

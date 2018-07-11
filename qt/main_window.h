@@ -69,6 +69,7 @@ private slots:
     void unload_analyzer();
     void log_toggle();
     void log_clear();
+    void truncate_log_file();
     void reset_size();
     void about();
     void about_qt();
